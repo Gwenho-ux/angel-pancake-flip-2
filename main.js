@@ -11,6 +11,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize game manager
     gameManager.init();
     
+    // Start background music (will be enabled on first user interaction)
+    let audioInitialized = false;
+    const initializeAudio = () => {
+        if (!audioInitialized) {
+            gameManager.audioManager.enableAudio();
+            gameManager.audioManager.playBackgroundMusic();
+            audioInitialized = true;
+        }
+    };
+    
+    // Enable audio on first user interaction
+    document.addEventListener('click', initializeAudio, { once: true });
+    document.addEventListener('touchstart', initializeAudio, { once: true });
+    document.addEventListener('keydown', initializeAudio, { once: true });
+    
     // Show start screen
     window.startScreen.show();
     
@@ -49,6 +64,21 @@ document.addEventListener('DOMContentLoaded', () => {
         tapButton.addEventListener('touchstart', (e) => {
             e.preventDefault();
             tapButton.click();
+        });
+    }
+    
+    // Add mute button functionality
+    const muteButton = document.getElementById('mute-btn');
+    if (muteButton) {
+        muteButton.addEventListener('click', () => {
+            const isMuted = gameManager.audioManager.toggleMute();
+            muteButton.textContent = isMuted ? '🔇' : '🔊';
+            muteButton.classList.toggle('muted', isMuted);
+            
+            // Re-initialize audio if needed
+            if (!isMuted && !audioInitialized) {
+                initializeAudio();
+            }
         });
     }
     

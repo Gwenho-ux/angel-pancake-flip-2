@@ -22,6 +22,9 @@ class GameManager {
         
         this.qteTimeouts = [];
         this.isGameActive = false;
+        
+        // Initialize audio manager
+        this.audioManager = new AudioManager();
     }
 
     init() {
@@ -44,6 +47,9 @@ class GameManager {
         this.updatePancakeVisual();
         
         this.scoreDisplay.reset();
+        
+        // Start cooking sound loop during gameplay
+        this.audioManager.startCookingSound();
         
         // Start 60-second game timer
         this.gameTimer = new Timer(60, 
@@ -112,11 +118,24 @@ class GameManager {
         this.scoreDisplay.addScore(score);
         this.score = this.scoreDisplay.targetScore;
         
-        // Only flip pancake if user didn't miss (score > 0)
+        // Play appropriate sound effects based on score
         if (score > 0) {
+            this.audioManager.playFlipSound(); // Play flip sound for any successful flip
             this.flipPancake();
             // Increment flip count only for successful flips
             this.pancakeFlipCount++;
+            
+            // Play success sound for good flips (score >= 3)
+            if (score >= 3) {
+                setTimeout(() => {
+                    this.audioManager.playSuccessSound();
+                    this.createSparkleEffect();
+                }, 300); // Slight delay for better audio layering
+            }
+        } else {
+            // Play fail sound for missed or bad flips
+            this.audioManager.playFailSound();
+            this.createFailEffect();
         }
         
         // Track missed/red zone flips (only count score 0 and negative scores)
@@ -204,8 +223,122 @@ class GameManager {
         this.dialogueBubble.classList.remove('show');
     }
 
+    createSparkleEffect() {
+        const pancakeRect = this.pancakeElement.getBoundingClientRect();
+        const panRect = this.panElement.getBoundingClientRect();
+        
+        // Create multiple sparkle particles
+        for (let i = 0; i < 8; i++) {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'sparkle-particle';
+            sparkle.textContent = '✨';
+            
+            // Position sparkle at pancake center
+            sparkle.style.position = 'absolute';
+            sparkle.style.left = '50%';
+            sparkle.style.top = '50%';
+            sparkle.style.fontSize = '20px';
+            sparkle.style.pointerEvents = 'none';
+            sparkle.style.zIndex = '10';
+            
+            // Random end positions
+            const angle = (i / 8) * 2 * Math.PI;
+            const distance = 50 + Math.random() * 30;
+            const endX = Math.cos(angle) * distance;
+            const endY = Math.sin(angle) * distance;
+            
+            sparkle.style.setProperty('--end-x', `${endX}px`);
+            sparkle.style.setProperty('--end-y', `${endY}px`);
+            
+            this.panElement.appendChild(sparkle);
+            
+            // Animate sparkle
+            sparkle.style.animation = 'sparkle 1s ease-out forwards';
+            
+            // Remove sparkle after animation
+            setTimeout(() => {
+                if (sparkle.parentNode) {
+                    sparkle.parentNode.removeChild(sparkle);
+                }
+            }, 1000);
+        }
+    }
+
+    createFailEffect() {
+        const pancakeRect = this.pancakeElement.getBoundingClientRect();
+        const panRect = this.panElement.getBoundingClientRect();
+        
+        // Create smoke particles
+        for (let i = 0; i < 5; i++) {
+            const smoke = document.createElement('div');
+            smoke.className = 'fail-particle';
+            smoke.textContent = '💨';
+            
+            // Position smoke at pancake center
+            smoke.style.position = 'absolute';
+            smoke.style.left = '50%';
+            smoke.style.top = '50%';
+            smoke.style.fontSize = '24px';
+            smoke.style.pointerEvents = 'none';
+            smoke.style.zIndex = '10';
+            
+            // Random end positions
+            const angle = Math.random() * 2 * Math.PI;
+            const distance = 30 + Math.random() * 40;
+            const endX = Math.cos(angle) * distance;
+            const endY = Math.sin(angle) * distance - 20; // Drift upward
+            
+            smoke.style.setProperty('--end-x', `${endX}px`);
+            smoke.style.setProperty('--end-y', `${endY}px`);
+            
+            this.panElement.appendChild(smoke);
+            
+            // Animate smoke
+            smoke.style.animation = 'failSmoke 1.2s ease-out forwards';
+            
+            // Remove smoke after animation
+            setTimeout(() => {
+                if (smoke.parentNode) {
+                    smoke.parentNode.removeChild(smoke);
+                }
+            }, 1200);
+        }
+        
+        // Create big X mark
+        const xMark = document.createElement('div');
+        xMark.className = 'fail-x';
+        xMark.textContent = '❌';
+        xMark.style.position = 'absolute';
+        xMark.style.left = '50%';
+        xMark.style.top = '50%';
+        xMark.style.fontSize = '40px';
+        xMark.style.pointerEvents = 'none';
+        xMark.style.zIndex = '11';
+        
+        this.panElement.appendChild(xMark);
+        
+        // Animate X mark
+        xMark.style.animation = 'failX 1s ease-out forwards';
+        
+        // Add screen shake effect
+        document.getElementById('game-container').classList.add('screen-shake');
+        setTimeout(() => {
+            document.getElementById('game-container').classList.remove('screen-shake');
+        }, 500);
+        
+        // Remove X mark after animation
+        setTimeout(() => {
+            if (xMark.parentNode) {
+                xMark.parentNode.removeChild(xMark);
+            }
+        }, 1000);
+    }
+
     endGame() {
         this.isGameActive = false;
+        
+        // Stop cooking sound
+        this.audioManager.stopCookingSound();
         
         // Stop all timers and pending QTEs
         if (this.gameTimer) {
@@ -257,6 +390,9 @@ class GameManager {
         this.isGameActive = false;
         this.score = 0;
         this.qteCount = 0;
+        
+        // Stop all audio
+        this.audioManager.stopCookingSound();
         
         // Reset pancake state
         this.currentPancakeState = 'raw';
