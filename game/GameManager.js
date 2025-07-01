@@ -125,7 +125,7 @@ class GameManager {
             // Increment flip count only for successful flips
             this.pancakeFlipCount++;
             
-            // Play success sound and create sparkle effects for good flips
+            // Play success sound and create sparkle effects AFTER pancake flip animation (600ms)
             if (score >= 3) {
                 setTimeout(() => {
                     this.audioManager.playSuccessSound();
@@ -135,17 +135,19 @@ class GameManager {
                     } else {
                         this.createSparkleEffect();
                     }
-                }, 300); // Slight delay for better audio layering
+                }, 650); // After flip animation completes (600ms) + small buffer
             } else if (score > 0) {
-                // Regular flip (score 1-2) gets basic sparkles without sound
+                // Regular flip (score 1-2) gets basic sparkles without sound AFTER flip
                 setTimeout(() => {
                     this.createSparkleEffect();
-                }, 200);
+                }, 650); // After flip animation completes
             }
         } else {
-            // Play fail sound for missed or bad flips
-            this.audioManager.playFailSound();
-            this.createFailEffect();
+            // Play fail sound and effects AFTER attempted flip animation
+            setTimeout(() => {
+                this.audioManager.playFailSound();
+                this.createFailEffect();
+            }, 650); // After flip animation would complete
         }
         
         // Track missed/red zone flips (only count score 0 and negative scores)
@@ -163,7 +165,7 @@ class GameManager {
         setTimeout(() => {
             this.hideDialogue();
             this.updatePancakeVisual();
-        }, 1500); // Increased delay for better visual feedback
+        }, 2000); // Extended delay to allow effects to play after flip
         
         // Check if game should end
         if (this.qteCount >= this.maxQTEs) {
