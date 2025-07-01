@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Angel's Pancake Flip</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- Start Screen -->
+        <div id="start-screen" class="screen active">
+            <h1 class="game-title">Angel's Pancake Flip</h1>
+            <div class="angel-placeholder">
+                <div class="pancake perfect"></div>
+            </div>
+            <div class="input-container">
+                <input type="text" id="player-name" placeholder="Enter your name" maxlength="20">
+                <button id="start-btn" class="neon-btn">START GAME</button>
+            </div>
+            <button id="leaderboard-btn" class="neon-btn secondary">LEADERBOARD</button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <div class="game-header">
+                <div class="score-display">
+                    <span class="label">SCORE</span>
+                    <span id="current-score">0</span>
+                </div>
+                <div class="timer-display">
+                    <span class="label">TIME</span>
+                    <span id="game-timer">60</span>
+                </div>
+            </div>
+
+            <div class="game-area">
+                <div class="angel-display">
+                    <div class="angel-placeholder">
+                        <div class="pancake raw" id="game-pancake"></div>
+                    </div>
+                    <div class="dialogue-bubble" id="dialogue-bubble"></div>
+                </div>
+
+                <div class="qte-container" id="qte-container">
+                    <div class="qte-bar">
+                        <div class="red-zone left"></div>
+                        <div class="green-zone">
+                            <div class="yellow-line"></div>
+                        </div>
+                        <div class="red-zone right"></div>
+                        <div class="marker" id="marker"></div>
+                    </div>
+                    <button id="tap-btn" class="tap-button">TAP!</button>
+                    <div class="qte-timer-bar">
+                        <div class="qte-timer-fill" id="qte-timer-fill"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="screen">
+            <div class="angel-placeholder">
+                <div class="pancake" id="result-pancake"></div>
+            </div>
+            <div class="final-score">
+                <span class="label">FINAL SCORE</span>
+                <span id="final-score-value">0</span>
+            </div>
+            <div class="roast-message" id="roast-message"></div>
+            <div class="result-buttons">
+                <button id="play-again-btn" class="neon-btn">PLAY AGAIN</button>
+                <button id="back-to-menu-btn" class="neon-btn secondary">MAIN MENU</button>
+            </div>
+        </div>
+
+        <!-- Leaderboard Screen -->
+        <div id="leaderboard-screen" class="screen">
+            <h2 class="leaderboard-title">LEADERBOARD</h2>
+            <div id="leaderboard-list" class="leaderboard-list"></div>
+            <button id="back-from-leaderboard-btn" class="neon-btn">BACK</button>
+        </div>
+    </div>
+
+    <script src="components/Timer.js"></script>
+    <script src="components/ScoreDisplay.js"></script>
+    <script src="components/Button.js"></script>
+    <script src="game/QTERound.js"></script>
+    <script src="game/GameManager.js"></script>
+    <script src="ui/StartScreen.js"></script>
+    <script src="ui/Leaderboard.js"></script>
+    <script src="ui/ResultScreen.js"></script>
+    <script src="main.js"></script>
+</body>
+</html> 

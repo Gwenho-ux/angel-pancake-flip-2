@@ -1,0 +1,10 @@
+This is a test file to check GitHub push functionality.
+
+Angel's Pancake Flip Game
+- Kitchen background ✅
+- Pan with pancakes ✅ 
+- Pancake state changes ✅
+- Pan shaking animation ✅
+- All features working locally ✅
+
+The game is complete and functional! 
