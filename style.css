@@ -1,14 +1,17 @@
 /* Global Styles */
 :root {
-    --neon-purple: #B026FF;
-    --neon-blue: #00D4FF;
-    --neon-pink: #FF0099;
-    --dark-bg: #0a0a1f;
-    --darker-bg: #050510;
-    --light-text: #ffffff;
-    --glow-purple: 0 0 20px rgba(176, 38, 255, 0.8);
-    --glow-blue: 0 0 20px rgba(0, 212, 255, 0.8);
-    --glow-pink: 0 0 20px rgba(255, 0, 153, 0.8);
+    --pastel-pink: #E8A5B0;
+    --pastel-blue: #7BB8D4;
+    --pastel-purple: #C890C8;
+    --pastel-yellow: #F0EBBB;
+    --pastel-green: #88E088;
+    --pastel-peach: #EECAA8;
+    --light-bg: #FFF5F5;
+    --lighter-bg: #FFFFFF;
+    --dark-text: #4A4A4A;
+    --glow-pink: 0 0 12px rgba(232, 165, 176, 0.5);
+    --glow-blue: 0 0 12px rgba(123, 184, 212, 0.5);
+    --glow-purple: 0 0 12px rgba(200, 144, 200, 0.5);
 }
 
 * {
@@ -19,17 +22,18 @@
 
 body {
     font-family: 'Arial', sans-serif;
-    background: var(--darker-bg);
-    color: var(--light-text);
+    background: var(--lighter-bg);
+    background-image: url('./assets/background.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    color: var(--dark-text);
     overflow: hidden;
     height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    background-image: 
-        radial-gradient(circle at 20% 80%, rgba(176, 38, 255, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(255, 0, 153, 0.1) 0%, transparent 50%);
 }
 
 #game-container {
@@ -38,14 +42,15 @@ body {
     height: 100vh;
     max-height: 750px;
     position: relative;
-    background: rgba(10, 10, 31, 0.9);
-    background-image: url('./assets/background.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
     border-radius: 20px;
-    box-shadow: 0 0 50px rgba(176, 38, 255, 0.3);
     overflow: hidden;
+    transition: background 0.3s ease, backdrop-filter 0.3s ease;
+}
+
+/* Shorter container specifically for start screen and result screen */
+#game-container.start-screen-active,
+#game-container.result-screen-active {
+    max-height: 600px; /* 20% shorter: 750px * 0.8 = 600px */
 }
 
 /* Screen Management */
@@ -85,14 +90,20 @@ body {
 .game-title {
     font-size: 2.5em;
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
     text-transform: uppercase;
-    background: linear-gradient(45deg, var(--neon-purple), var(--neon-blue), var(--neon-pink));
+    background: linear-gradient(45deg, var(--pastel-pink), var(--pastel-blue), var(--pastel-purple));
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 20px rgba(176, 38, 255, 0.5));
+    filter: drop-shadow(0 0 10px rgba(255, 182, 193, 0.5));
     animation: pulse 2s infinite;
+}
+
+/* Adjust title size for shorter container */
+#game-container.start-screen-active .game-title {
+    font-size: 2.2em;
+    margin-bottom: 15px;
 }
 
 .angel-placeholder {
@@ -105,6 +116,25 @@ body {
     align-items: center;
     justify-content: center;
     transition: transform 0.1s ease;
+}
+
+/* Adjust pan size for shorter container on start screen */
+#game-container.start-screen-active .angel-placeholder {
+    width: 300px;
+    height: 300px;
+    margin: 15px auto;
+}
+
+/* Use landing image specifically for start screen - higher specificity */
+#game-container.start-screen-active #start-screen .angel-placeholder {
+    background: url('./assets/landing.png') center/contain no-repeat !important;
+    width: 450px !important; /* 20% bigger: 375px * 1.2 = 450px */
+    height: 450px !important; /* 20% bigger: 375px * 1.2 = 450px */
+}
+
+/* Hide the pancake element on start screen since landing image includes it */
+#start-screen .pancake {
+    display: none;
 }
 
 .angel-placeholder.shaking {
@@ -127,7 +157,7 @@ body {
 /* Pancake visual states */
 .pancake {
     position: absolute;
-    top: 45%;
+    top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     width: 150px;
@@ -179,6 +209,68 @@ body {
     }
 }
 
+@keyframes sparkle {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: translate(calc(-50% + var(--end-x)), calc(-50% + var(--end-y))) scale(1.5);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--end-x)), calc(-50% + var(--end-y))) scale(0);
+    }
+}
+
+@keyframes failSmoke {
+    0% {
+        opacity: 0.8;
+        transform: translate(-50%, -50%) scale(0.5);
+    }
+    50% {
+        opacity: 0.6;
+        transform: translate(calc(-50% + var(--end-x)), calc(-50% + var(--end-y))) scale(1.2);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--end-x)), calc(-50% + var(--end-y))) scale(2);
+    }
+}
+
+@keyframes failX {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0) rotate(0deg);
+    }
+    30% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.3) rotate(180deg);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8) rotate(360deg);
+    }
+}
+
+@keyframes screen-shake {
+    0%, 100% { transform: translateX(0); }
+    10% { transform: translateX(-2px) rotate(-0.5deg); }
+    20% { transform: translateX(2px) rotate(0.5deg); }
+    30% { transform: translateX(-1px) rotate(-0.3deg); }
+    40% { transform: translateX(1px) rotate(0.3deg); }
+    50% { transform: translateX(-0.5px) rotate(-0.1deg); }
+    60% { transform: translateX(0.5px) rotate(0.1deg); }
+    70% { transform: translateX(-0.3px); }
+    80% { transform: translateX(0.3px); }
+    90% { transform: translateX(-0.1px); }
+}
+
+.screen-shake {
+    animation: screen-shake 0.5s ease-in-out;
+}
+
 .input-container {
     display: flex;
     flex-direction: column;
@@ -188,12 +280,18 @@ body {
     margin: 20px auto;
 }
 
+/* Adjust input container spacing for shorter container */
+#game-container.start-screen-active .input-container {
+    gap: 12px;
+    margin: 15px auto;
+}
+
 #player-name {
     padding: 15px;
-    border: 2px solid var(--neon-blue);
-    background: rgba(0, 212, 255, 0.1);
+    border: 2px solid var(--pastel-blue);
+    background: rgba(123, 184, 212, 0.08);
     border-radius: 10px;
-    color: var(--light-text);
+    color: var(--dark-text);
     font-size: 1.1em;
     text-align: center;
     outline: none;
@@ -209,29 +307,31 @@ body {
 .neon-btn {
     padding: 15px 30px;
     border: none;
-    background: linear-gradient(45deg, var(--neon-purple), var(--neon-blue));
-    color: var(--light-text);
+    background: linear-gradient(45deg, var(--pastel-pink), var(--pastel-purple));
+    color: white;
     font-size: 1.2em;
     font-weight: bold;
     border-radius: 50px;
     cursor: pointer;
     text-transform: uppercase;
     transition: all 0.3s;
-    box-shadow: 0 4px 15px rgba(176, 38, 255, 0.4);
+    box-shadow: 0 3px 12px rgba(232, 165, 176, 0.3);
+    width: 100%;
+    max-width: 300px;
 }
 
 .neon-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(176, 38, 255, 0.6);
+    box-shadow: 0 5px 16px rgba(232, 165, 176, 0.45);
 }
 
 .neon-btn.secondary {
-    background: linear-gradient(45deg, var(--neon-pink), var(--neon-purple));
-    box-shadow: 0 4px 15px rgba(255, 0, 153, 0.4);
+    background: linear-gradient(45deg, var(--pastel-blue), var(--pastel-green));
+    box-shadow: 0 3px 12px rgba(123, 184, 212, 0.3);
 }
 
 .neon-btn.secondary:hover {
-    box-shadow: 0 6px 20px rgba(255, 0, 153, 0.6);
+    box-shadow: 0 5px 16px rgba(123, 184, 212, 0.45);
 }
 
 /* Game Screen */
@@ -241,14 +341,24 @@ body {
     left: 20px;
     right: 20px;
     display: flex;
-    justify-content: space-between;
+    justify-content: space-between; /* Score and timer displays */
 }
 
-.score-display, .timer-display {
-    background: rgba(176, 38, 255, 0.2);
+.score-display {
+    background: rgba(232, 165, 176, 0.6);
     padding: 10px 20px;
     border-radius: 10px;
-    border: 2px solid var(--neon-purple);
+    border: 2px solid var(--pastel-pink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.timer-display {
+    background: rgba(232, 165, 176, 0.6);
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: 2px solid var(--pastel-pink);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -256,31 +366,44 @@ body {
 
 .label {
     font-size: 0.8em;
-    opacity: 0.8;
+    opacity: 0.9;
     margin-bottom: 5px;
+    color: #004970;
+    font-weight: 600;
 }
 
-#current-score, #game-timer {
+#current-score {
     font-size: 2em;
     font-weight: bold;
-    color: var(--neon-blue);
-    text-shadow: 0 0 10px var(--neon-blue);
+    color: #004970;
+    text-shadow: none;
+}
+
+#game-timer {
+    font-size: 2em; /* Back to normal size in header */
+    font-weight: bold;
+    color: #004970;
+    text-shadow: none;
 }
 
 .game-area {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start; /* Changed from center to flex-start */
     height: 100%;
     border-radius: 20px;
     padding: 20px;
+    padding-top: 100px; /* Reduced from 120px to give more space for QTE UI */
+    padding-bottom: 30px; /* Ensure bottom spacing for QTE UI */
 }
 
 .angel-display {
     position: relative;
     margin-bottom: 20px;
-    min-height: 400px;
+    margin-top: 15vh; /* Moved up from 15vh (about 60px less) */
+    margin-left: 35px; /* Move right 20px */
+    min-height: 300px; /* Reduced to ensure QTE UI fits */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -291,48 +414,67 @@ body {
     bottom: -30px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 212, 255, 0.9);
+    background: var(--pastel-yellow);
     padding: 10px 20px;
     border-radius: 20px;
-    color: var(--dark-bg);
+    color: var(--dark-text);
     font-weight: bold;
     opacity: 0;
     transition: opacity 0.3s;
     white-space: nowrap;
     z-index: 2;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
 }
 
 .dialogue-bubble.show {
     opacity: 1;
 }
 
+/* QTE Controls Container - New layout */
+.qte-controls-container {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 700px;
+    margin-top: 10px;
+}
+
+.qte-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
 /* QTE Container */
 .qte-container {
     width: 100%;
-    max-width: 600px;
-    opacity: 0;
+    opacity: 0.4;
     transition: opacity 0.3s;
+    pointer-events: none;
 }
 
 .qte-container.active {
     opacity: 1;
+    pointer-events: auto;
 }
 
 .qte-bar {
     width: 100%;
     height: 60px;
-    background: var(--darker-bg);
+    background: var(--light-bg);
     border-radius: 30px;
     display: flex;
     position: relative;
     overflow: hidden;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    margin-bottom: 20px;
+    border: 2px solid var(--pastel-purple);
+    margin-bottom: 0; /* Removed since timer bar spacing is handled separately */
 }
 
 .red-zone {
     width: 25%;
-    background: linear-gradient(90deg, rgba(255, 0, 0, 0.6), rgba(255, 0, 0, 0.3));
+    background: linear-gradient(90deg, rgba(232, 165, 176, 0.7), rgba(232, 165, 176, 0.4));
 }
 
 .red-zone.left {
@@ -345,7 +487,7 @@ body {
 
 .green-zone {
     width: 50%;
-    background: linear-gradient(90deg, rgba(0, 255, 0, 0.3), rgba(0, 255, 0, 0.5), rgba(0, 255, 0, 0.3));
+    background: linear-gradient(90deg, rgba(136, 224, 136, 0.4), rgba(136, 224, 136, 0.7), rgba(136, 224, 136, 0.4));
     position: relative;
 }
 
@@ -355,8 +497,8 @@ body {
     transform: translateX(-50%);
     width: 3px;
     height: 100%;
-    background: #FFD700;
-    box-shadow: 0 0 10px #FFD700;
+    background: var(--pastel-yellow);
+    box-shadow: 0 0 8px var(--pastel-yellow);
 }
 
 .marker {
@@ -364,56 +506,55 @@ body {
     top: -5px;
     width: 4px;
     height: 70px;
-    background: var(--light-text);
-    box-shadow: 0 0 10px var(--light-text);
+    background: var(--pastel-purple);
+    box-shadow: 0 0 8px var(--pastel-purple);
     transition: left 0.016s linear;
 }
 
 /* TAP Button */
 .tap-button {
-    width: 120px;
-    height: 120px;
+    width: 90px;
+    height: 90px;
     border-radius: 50%;
-    background: radial-gradient(circle, var(--neon-pink), var(--neon-purple));
+    background: radial-gradient(circle, #E91E63, #C2185B);
     border: none;
-    color: var(--light-text);
-    font-size: 1.8em;
+    color: white;
+    font-size: 1.4em;
     font-weight: bold;
     cursor: pointer;
-    margin: 0 auto;
-    display: block;
+    flex-shrink: 0; /* Prevent shrinking in flex layout */
     transition: all 0.1s;
-    box-shadow: 0 0 30px rgba(255, 0, 153, 0.5);
+    box-shadow: 0 4px 12px rgba(233, 30, 99, 0.6), 0 0 20px rgba(233, 30, 99, 0.3);
 }
 
 .tap-button:active {
     transform: scale(0.95);
-    box-shadow: 0 0 50px rgba(255, 0, 153, 0.8);
+    box-shadow: 0 2px 8px rgba(233, 30, 99, 0.8), 0 0 30px rgba(233, 30, 99, 0.5);
 }
 
 /* QTE Timer Bar */
 .qte-timer-bar {
     width: 100%;
     height: 10px;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(200, 144, 200, 0.2);
     border-radius: 5px;
-    margin-top: 20px;
+    margin-top: 10px; /* Reduced since timer is now below */
     overflow: hidden;
 }
 
 .qte-timer-fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+    background: linear-gradient(90deg, var(--pastel-blue), var(--pastel-pink));
     width: 100%;
     transition: width 0.1s linear;
 }
 
 /* Result Screen */
 .final-score {
-    background: rgba(176, 38, 255, 0.2);
+    background: rgba(232, 165, 176, 0.25);
     padding: 20px 40px;
     border-radius: 15px;
-    border: 2px solid var(--neon-purple);
+    border: 2px solid var(--pastel-pink);
     margin: 20px 0;
     display: flex;
     flex-direction: column;
@@ -423,18 +564,19 @@ body {
 #final-score-value {
     font-size: 3em;
     font-weight: bold;
-    color: var(--neon-blue);
-    text-shadow: 0 0 15px var(--neon-blue);
+    color: var(--pastel-purple);
+    text-shadow: 0 0 10px var(--pastel-purple);
 }
 
 .roast-message {
     font-size: 1.3em;
     margin: 20px 0;
     padding: 15px 30px;
-    background: rgba(255, 0, 153, 0.2);
+    background: rgba(240, 235, 187, 0.45);
     border-radius: 10px;
     text-align: center;
     max-width: 500px;
+    color: var(--dark-text);
 }
 
 .result-buttons {
@@ -448,8 +590,8 @@ body {
     font-size: 2.5em;
     margin-bottom: 30px;
     text-transform: uppercase;
-    color: var(--neon-blue);
-    text-shadow: 0 0 20px var(--neon-blue);
+    color: var(--pastel-blue);
+    text-shadow: 0 0 15px var(--pastel-blue);
 }
 
 .leaderboard-list {
@@ -466,21 +608,21 @@ body {
     align-items: center;
     padding: 15px 20px;
     margin: 10px 0;
-    background: rgba(0, 212, 255, 0.1);
+    background: rgba(123, 184, 212, 0.18);
     border-radius: 10px;
-    border: 1px solid rgba(0, 212, 255, 0.3);
+    border: 1px solid rgba(123, 184, 212, 0.35);
     transition: all 0.3s;
 }
 
 .leaderboard-entry:hover {
     transform: translateX(5px);
-    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 12px rgba(123, 184, 212, 0.35);
 }
 
 .leaderboard-rank {
     font-size: 1.5em;
     font-weight: bold;
-    color: var(--neon-purple);
+    color: var(--pastel-purple);
     width: 50px;
 }
 
@@ -493,20 +635,17 @@ body {
 .leaderboard-score {
     font-size: 1.2em;
     font-weight: bold;
-    color: var(--neon-pink);
+    color: var(--pastel-pink);
 }
 
-/* Start screen overlay */
-#start-screen {
-    background: rgba(10, 10, 31, 0.95);
+/* Screen-specific backgrounds */
+#start-screen, #result-screen, #leaderboard-screen {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(8px);
 }
 
-/* Result screen overlay */
-#result-screen {
-    background: rgba(10, 10, 31, 0.95);
-}
-
-/* Leaderboard screen overlay */
-#leaderboard-screen {
-    background: rgba(10, 10, 31, 0.95);
+/* Game screen - transparent background */
+#game-screen {
+    background: transparent;
+    backdrop-filter: none;
 } 

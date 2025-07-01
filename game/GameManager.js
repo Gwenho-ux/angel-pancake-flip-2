@@ -4,7 +4,7 @@ class GameManager {
         this.currentPlayer = '';
         this.score = 0;
         this.qteCount = 0;
-        this.maxQTEs = 6;
+        this.maxQTEs = 10;
         this.gameTimer = null;
         this.qteRound = null;
         this.scoreDisplay = null;
@@ -18,6 +18,7 @@ class GameManager {
         this.currentPancakeState = 'raw';
         this.pancakeStates = ['raw', 'cooking', 'perfect', 'burnt'];
         this.pancakeFlipCount = 0;
+        this.missedFlips = 0; // Track red zone/missed flips
         
         this.qteTimeouts = [];
         this.isGameActive = false;
@@ -39,6 +40,7 @@ class GameManager {
         // Reset pancake state
         this.currentPancakeState = 'raw';
         this.pancakeFlipCount = 0;
+        this.missedFlips = 0;
         this.updatePancakeVisual();
         
         this.scoreDisplay.reset();
@@ -63,22 +65,27 @@ class GameManager {
         this.qteTimeouts.forEach(timeout => clearTimeout(timeout));
         this.qteTimeouts = [];
         
-        // Generate random times for 6 QTEs within 60 seconds
-        // Ensure at least 6 seconds between QTEs (5s QTE + 1s buffer)
+        // Create truly random QTE intervals with guaranteed 2-second breaks
         const qteIntervals = [];
-        let totalTime = 0;
+        const minBreakTime = 2000; // 2 seconds minimum break
+        const qteTime = 3000; // 3 seconds for QTE
+        const dialogueTime = 1000; // 1 second for dialogue
+        const totalQTECycle = qteTime + dialogueTime; // Total time for one QTE cycle
+        
+        // Generate random intervals ensuring 2-second breaks
+        let currentTime = Math.random() * 3000 + 2000; // Start between 2-5 seconds
         
         for (let i = 0; i < this.maxQTEs; i++) {
-            // Random delay between 2-6 seconds
-            const delay = Math.random() * 4000 + 2000;
-            totalTime += delay;
-            
-            if (totalTime < 55000) { // Ensure last QTE can complete
-                qteIntervals.push(totalTime);
+            if (currentTime + totalQTECycle < 58000) { // Ensure QTE can complete within 60s
+                qteIntervals.push(currentTime);
+                
+                // Next QTE: random interval between 6-11 seconds from now
+                // (3s QTE + 1s dialogue + 2-6s random break)
+                currentTime += totalQTECycle + minBreakTime + Math.random() * 4000;
             }
         }
         
-        // Schedule each QTE
+        // Schedule each QTE at its random interval
         qteIntervals.forEach((time, index) => {
             const timeout = setTimeout(() => {
                 if (this.isGameActive) {
@@ -95,49 +102,43 @@ class GameManager {
         this.qteCount++;
         this.showDialogue("Flip the pancake!");
         
-        // Update pancake state based on QTE count
-        if (this.pancakeFlipCount < this.pancakeStates.length - 1) {
-            this.currentPancakeState = this.pancakeStates[Math.min(this.pancakeFlipCount + 1, this.pancakeStates.length - 1)];
-            this.updatePancakeVisual();
-        }
-        
         setTimeout(() => {
             this.hideDialogue();
             this.qteRound.start();
-        }, 500);
+        }, 1000); // Increased dialogue time for better pacing
     }
 
     handleQTEComplete(score, message) {
         this.scoreDisplay.addScore(score);
         this.score = this.scoreDisplay.targetScore;
         
-        // Flip animation
-        this.flipPancake();
-        
-        // Update pancake state based on performance
-        if (score === 10) {
-            // Perfect flip - maintain or improve state
-            if (this.currentPancakeState === 'cooking') {
-                this.currentPancakeState = 'perfect';
-            }
-        } else if (score === 0) {
-            // Bad flip - risk of burning
-            if (this.currentPancakeState === 'perfect' || this.currentPancakeState === 'cooking') {
-                this.currentPancakeState = 'burnt';
-            }
+        // Only flip pancake if user didn't miss (score > 0)
+        if (score > 0) {
+            this.flipPancake();
+            // Increment flip count only for successful flips
+            this.pancakeFlipCount++;
         }
         
-        this.pancakeFlipCount++;
+        // Track missed/red zone flips (only count score 0 and negative scores)
+        if (score === 0 || score < 0) {
+            this.missedFlips++;
+            console.log(`Red zone hit! Score: ${score}, Total missed flips: ${this.missedFlips}`);
+        } else {
+            console.log(`Good flip! Score: ${score}, Total missed flips: ${this.missedFlips}`);
+        }
+        
+        // Update pancake state based on flip progression
+        this.updatePancakeState();
         
         this.showDialogue(message);
         setTimeout(() => {
             this.hideDialogue();
             this.updatePancakeVisual();
-        }, 500);
+        }, 1500); // Increased delay for better visual feedback
         
         // Check if game should end
         if (this.qteCount >= this.maxQTEs) {
-            setTimeout(() => this.endGame(), 1000);
+            setTimeout(() => this.endGame(), 2000);
         }
     }
     
@@ -154,6 +155,36 @@ class GameManager {
         }, 600);
     }
     
+    updatePancakeState() {
+        // Pancake progression based on flip count and performance
+        // Rules:
+        // - If user gets 3+ red zone hits (score 0): burnt pancake
+        // - Otherwise, progression based on flip count:
+        //   * Flips 1-2: raw pancake (pancake_1.png)
+        //   * Flips 3-4: cooking pancake (pancake_2.png) 
+        //   * Flips 5-6: perfect pancake (pancake_3.png)
+        
+        console.log(`Flip ${this.pancakeFlipCount}: Missed flips: ${this.missedFlips}`);
+        
+        if (this.missedFlips >= 3) {
+            // Too many red zone hits - burnt pancake
+            this.currentPancakeState = 'burnt';
+            console.log('Pancake burnt due to too many red zone hits');
+        } else {
+            // Normal progression based on flip count
+            if (this.pancakeFlipCount <= 2) {
+                this.currentPancakeState = 'raw';
+                console.log('Pancake state: raw (early flips)');
+            } else if (this.pancakeFlipCount <= 4) {
+                this.currentPancakeState = 'cooking';
+                console.log('Pancake state: cooking (middle flips)');
+            } else {
+                this.currentPancakeState = 'perfect';
+                console.log('Pancake state: perfect (later flips)');
+            }
+        }
+    }
+
     updatePancakeVisual() {
         // Remove all state classes
         this.pancakeStates.forEach(state => {
@@ -230,6 +261,7 @@ class GameManager {
         // Reset pancake state
         this.currentPancakeState = 'raw';
         this.pancakeFlipCount = 0;
+        this.missedFlips = 0;
         this.updatePancakeVisual();
         
         if (this.gameTimer) {

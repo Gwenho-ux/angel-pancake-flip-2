@@ -34,11 +34,15 @@ class StartScreen {
     show() {
         this.hideAllScreens();
         this.screen.classList.add('active');
+        // Make container shorter for start screen
+        document.getElementById('game-container').classList.add('start-screen-active');
         this.playerNameInput.focus();
     }
 
     hide() {
         this.screen.classList.remove('active');
+        // Remove shorter container class when leaving start screen
+        document.getElementById('game-container').classList.remove('start-screen-active');
     }
 
     handleStart() {

@@ -14,6 +14,8 @@ class ResultScreen {
     show(score, roastMessage, pancakeState = 'perfect') {
         this.hideAllScreens();
         this.screen.classList.add('active');
+        // Make container shorter for result screen
+        document.getElementById('game-container').classList.add('result-screen-active');
         
         // Update pancake visual
         this.updatePancakeVisual(pancakeState);
@@ -98,13 +100,11 @@ class ResultScreen {
     }
 
     playAgain() {
-        // Reset game and go back to game screen
+        // Reset everything and go back to start screen instead of restarting game
         this.gameManager.reset();
         this.hide();
-        document.getElementById('game-screen').classList.add('active');
-        
-        // Start new game with same player name
-        this.gameManager.startGame(this.gameManager.currentPlayer);
+        window.startScreen.reset();
+        window.startScreen.show();
     }
 
     backToMenu() {
@@ -117,6 +117,8 @@ class ResultScreen {
 
     hide() {
         this.screen.classList.remove('active');
+        // Remove shorter container class when leaving result screen
+        document.getElementById('game-container').classList.remove('result-screen-active');
         // Remove any high score effects
         const highScoreText = this.screen.querySelector('div[style*="NEW HIGH SCORE"]');
         if (highScoreText) {
