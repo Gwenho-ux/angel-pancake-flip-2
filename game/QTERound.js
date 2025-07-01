@@ -21,10 +21,12 @@ class QTERound {
 
     init() {
         this.tapButton.addEventListener('click', () => this.handleTap());
+        this.disableQTE(); // Start with QTE disabled
     }
 
     start() {
         this.reset();
+        this.enableQTE();
         this.isActive = true;
         this.container.classList.add('active');
         
@@ -151,6 +153,7 @@ class QTERound {
         
         // Hide QTE after a short delay
         setTimeout(() => {
+            this.disableQTE();
             this.container.classList.remove('active');
             if (this.onComplete) {
                 this.onComplete(score, message);
@@ -327,15 +330,51 @@ class QTERound {
         this.marker.style.background = 'var(--pastel-purple)';
         this.marker.style.boxShadow = '0 0 10px var(--pastel-purple)';
         this.qteTimerFill.style.width = '100%';
+        
+        // Stop any running animations or timers
+        if (this.animationFrame) {
+            cancelAnimationFrame(this.animationFrame);
+            this.animationFrame = null;
+        }
+        if (this.qteTimer) {
+            this.qteTimer.stop();
+            this.qteTimer = null;
+        }
+    }
+
+    enableQTE() {
+        // Enable QTE components
+        this.tapButton.disabled = false;
+        this.tapButton.style.opacity = '1';
+        this.tapButton.style.pointerEvents = 'auto';
+        this.container.style.opacity = '1';
+        this.container.style.pointerEvents = 'auto';
+    }
+
+    disableQTE() {
+        // Disable QTE components
+        this.tapButton.disabled = true;
+        this.tapButton.style.opacity = '0.4';
+        this.tapButton.style.pointerEvents = 'none';
+        this.container.style.opacity = '0.4';
+        this.container.style.pointerEvents = 'none';
+        
+        // Reset visual state
+        this.reset();
+        this.isActive = false;
+        this.container.classList.remove('active');
     }
 
     destroy() {
+        this.disableQTE();
         this.isActive = false;
         if (this.qteTimer) {
             this.qteTimer.stop();
+            this.qteTimer = null;
         }
         if (this.animationFrame) {
             cancelAnimationFrame(this.animationFrame);
+            this.animationFrame = null;
         }
     }
 } 

@@ -529,13 +529,15 @@ body {
 .qte-container {
     width: 100%;
     opacity: 0.4;
-    transition: opacity 0.3s;
+    transition: opacity 0.3s, filter 0.3s;
     pointer-events: none;
+    filter: grayscale(50%);
 }
 
 .qte-container.active {
     opacity: 1;
     pointer-events: auto;
+    filter: grayscale(0%);
 }
 
 .qte-bar {
@@ -608,6 +610,19 @@ body {
 .tap-button:active {
     transform: scale(0.95);
     box-shadow: 0 2px 8px rgba(233, 30, 99, 0.8), 0 0 30px rgba(233, 30, 99, 0.5);
+}
+
+.tap-button:disabled {
+    background: radial-gradient(circle, #999, #666);
+    cursor: not-allowed;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    filter: grayscale(100%);
+    opacity: 0.5;
+}
+
+.tap-button:disabled:active {
+    transform: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 /* QTE Timer Bar */

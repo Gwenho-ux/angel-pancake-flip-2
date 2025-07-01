@@ -32,6 +32,9 @@ class GameManager {
         this.qteRound = new QTERound(this.qteContainer, (score, message) => {
             this.handleQTEComplete(score, message);
         });
+        
+        // Ensure QTE starts disabled
+        this.qteRound.disableQTE();
     }
 
     startGame(playerName) {
@@ -450,7 +453,12 @@ class GameManager {
         }
         
         this.qteTimeouts.forEach(timeout => clearTimeout(timeout));
-        this.qteRound.destroy();
+        
+        // Properly disable and destroy QTE
+        if (this.qteRound) {
+            this.qteRound.disableQTE();
+            this.qteRound.destroy();
+        }
         
         // Get roast message based on score
         const roastMessage = this.getRoastMessage(this.score);
@@ -511,7 +519,9 @@ class GameManager {
         this.qteTimeouts.forEach(timeout => clearTimeout(timeout));
         this.qteTimeouts = [];
         
+        // Properly disable and reset QTE
         if (this.qteRound) {
+            this.qteRound.disableQTE();
             this.qteRound.destroy();
         }
         
