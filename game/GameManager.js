@@ -125,12 +125,22 @@ class GameManager {
             // Increment flip count only for successful flips
             this.pancakeFlipCount++;
             
-            // Play success sound for good flips (score >= 3)
+            // Play success sound and create sparkle effects for good flips
             if (score >= 3) {
                 setTimeout(() => {
                     this.audioManager.playSuccessSound();
-                    this.createSparkleEffect();
+                    // Perfect flip (score 5) gets fancy sparkles, good flip gets regular sparkles
+                    if (score === 5) {
+                        this.createFancySparkleEffect();
+                    } else {
+                        this.createSparkleEffect();
+                    }
                 }, 300); // Slight delay for better audio layering
+            } else if (score > 0) {
+                // Regular flip (score 1-2) gets basic sparkles without sound
+                setTimeout(() => {
+                    this.createSparkleEffect();
+                }, 200);
             }
         } else {
             // Play fail sound for missed or bad flips
@@ -262,6 +272,98 @@ class GameManager {
                 }
             }, 1000);
         }
+    }
+
+    createFancySparkleEffect() {
+        const pancakeRect = this.pancakeElement.getBoundingClientRect();
+        const panRect = this.panElement.getBoundingClientRect();
+        
+        // Create multiple waves of sparkles with different effects
+        const sparkleTypes = ['✨', '⭐', '💫', '🌟', '✨'];
+        const colors = ['gold', 'yellow', 'white', 'lightblue', 'pink'];
+        
+        // First wave - burst effect
+        for (let i = 0; i < 12; i++) {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'fancy-sparkle-particle';
+            sparkle.textContent = sparkleTypes[i % sparkleTypes.length];
+            
+            // Position sparkle at pancake center
+            sparkle.style.position = 'absolute';
+            sparkle.style.left = '50%';
+            sparkle.style.top = '50%';
+            sparkle.style.fontSize = `${25 + Math.random() * 15}px`;
+            sparkle.style.pointerEvents = 'none';
+            sparkle.style.zIndex = '10';
+            sparkle.style.color = colors[i % colors.length];
+            sparkle.style.textShadow = '0 0 10px currentColor';
+            
+            // Random end positions - larger burst
+            const angle = (i / 12) * 2 * Math.PI + Math.random() * 0.5;
+            const distance = 60 + Math.random() * 50;
+            const endX = Math.cos(angle) * distance;
+            const endY = Math.sin(angle) * distance;
+            
+            sparkle.style.setProperty('--end-x', `${endX}px`);
+            sparkle.style.setProperty('--end-y', `${endY}px`);
+            
+            this.panElement.appendChild(sparkle);
+            
+            // Animate sparkle with fancy effect
+            sparkle.style.animation = 'fancySparkle 1.5s ease-out forwards';
+            
+            // Remove sparkle after animation
+            setTimeout(() => {
+                if (sparkle.parentNode) {
+                    sparkle.parentNode.removeChild(sparkle);
+                }
+            }, 1500);
+        }
+        
+        // Second wave - delayed inner sparkles
+        setTimeout(() => {
+            for (let i = 0; i < 6; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.className = 'fancy-sparkle-inner';
+                sparkle.textContent = '🌟';
+                
+                sparkle.style.position = 'absolute';
+                sparkle.style.left = '50%';
+                sparkle.style.top = '50%';
+                sparkle.style.fontSize = '30px';
+                sparkle.style.pointerEvents = 'none';
+                sparkle.style.zIndex = '11';
+                sparkle.style.color = 'gold';
+                sparkle.style.textShadow = '0 0 15px gold';
+                
+                // Smaller circle pattern
+                const angle = (i / 6) * 2 * Math.PI;
+                const distance = 25 + Math.random() * 20;
+                const endX = Math.cos(angle) * distance;
+                const endY = Math.sin(angle) * distance;
+                
+                sparkle.style.setProperty('--end-x', `${endX}px`);
+                sparkle.style.setProperty('--end-y', `${endY}px`);
+                
+                this.panElement.appendChild(sparkle);
+                
+                // Animate with rotation
+                sparkle.style.animation = 'fancySparkleInner 1.2s ease-out forwards';
+                
+                setTimeout(() => {
+                    if (sparkle.parentNode) {
+                        sparkle.parentNode.removeChild(sparkle);
+                    }
+                }, 1200);
+            }
+        }, 200);
+        
+        // Add screen glow effect
+        const gameContainer = document.getElementById('game-container');
+        gameContainer.style.boxShadow = '0 0 30px rgba(255, 215, 0, 0.6)';
+        setTimeout(() => {
+            gameContainer.style.boxShadow = '';
+        }, 1000);
     }
 
     createFailEffect() {
