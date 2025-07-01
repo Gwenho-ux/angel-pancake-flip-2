@@ -22,6 +22,7 @@ class GameManager {
         
         this.qteTimeouts = [];
         this.isGameActive = false;
+        this.gameTimerFrame = null;
         
         // Initialize audio manager
         this.audioManager = new AudioManager();
@@ -54,16 +55,33 @@ class GameManager {
         // Start cooking sound loop during gameplay
         this.audioManager.startCookingSound();
         
-        // Start 60-second game timer
-        this.gameTimer = new Timer(60, 
-            (remaining) => {
-                this.gameTimerElement.textContent = Math.ceil(remaining);
-            },
-            () => {
+        // Start 60-second game timer - optimized for performance
+        this.gameTimerElement.textContent = '60';
+        const gameStartTime = Date.now();
+        const gameDuration = 60000; // 60 seconds
+        let lastDisplayedTime = 60;
+        
+        const updateGameTimer = () => {
+            if (!this.isGameActive) return;
+            
+            const elapsed = Date.now() - gameStartTime;
+            const remaining = Math.max(0, gameDuration - elapsed);
+            const displayTime = Math.ceil(remaining / 1000);
+            
+            // Only update DOM if the displayed value changes
+            if (displayTime !== lastDisplayedTime) {
+                lastDisplayedTime = displayTime;
+                this.gameTimerElement.textContent = displayTime;
+            }
+            
+            if (remaining > 0) {
+                this.gameTimerFrame = requestAnimationFrame(updateGameTimer);
+            } else {
                 this.endGame();
             }
-        );
-        this.gameTimer.start();
+        };
+        
+        this.gameTimerFrame = requestAnimationFrame(updateGameTimer);
         
         // Schedule QTEs at random intervals
         this.scheduleQTEs();
@@ -448,6 +466,10 @@ class GameManager {
         this.audioManager.stopCookingSound();
         
         // Stop all timers and pending QTEs
+        if (this.gameTimerFrame) {
+            cancelAnimationFrame(this.gameTimerFrame);
+            this.gameTimerFrame = null;
+        }
         if (this.gameTimer) {
             this.gameTimer.stop();
         }
@@ -512,6 +534,10 @@ class GameManager {
         this.missedFlips = 0;
         this.updatePancakeVisual();
         
+        if (this.gameTimerFrame) {
+            cancelAnimationFrame(this.gameTimerFrame);
+            this.gameTimerFrame = null;
+        }
         if (this.gameTimer) {
             this.gameTimer.stop();
         }

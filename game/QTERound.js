@@ -11,6 +11,7 @@ class QTERound {
         this.markerDirection = 1;
         this.markerSpeed = 1.5; // Reduced speed for better control
         this.animationFrame = null;
+        this.timerFrame = null;
         this.qteTimer = null;
         this.hasBeenTapped = false;
         this.isActive = false;
@@ -33,22 +34,36 @@ class QTERound {
         // Start marker animation
         this.animateMarker();
         
-        // Start QTE timer (3 seconds)
-        this.qteTimer = new Timer(3, 
-            (remaining) => {
-                const progress = (3 - remaining) / 3;
-                this.qteTimerFill.style.width = `${(1 - progress) * 100}%`;
-            },
-            () => {
+        // Start QTE timer (3 seconds) - optimized for performance
+        const startTime = Date.now();
+        const duration = 3000; // 3 seconds in ms
+        
+        const updateTimer = () => {
+            if (!this.isActive) return;
+            
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Use transform for better performance
+            this.qteTimerFill.style.transform = `scaleX(${1 - progress})`;
+            
+            if (progress < 1) {
+                this.timerFrame = requestAnimationFrame(updateTimer);
+            } else {
                 if (!this.hasBeenTapped) {
                     this.complete(-3, 'Too slow!'); // No tap penalty
                 }
             }
-        );
-        this.qteTimer.start();
+        };
+        
+        this.timerFrame = requestAnimationFrame(updateTimer);
     }
 
     animateMarker() {
+        // Use transform for better performance
+        const qteBarWidth = this.container.querySelector('.qte-bar').offsetWidth;
+        const markerWidth = this.marker.offsetWidth;
+        
         const animate = (currentTime) => {
             if (!this.isActive) return;
             
@@ -57,10 +72,17 @@ class QTERound {
                 this.lastFrameTime = currentTime;
             }
             const deltaTime = currentTime - this.lastFrameTime;
+            
+            // Throttle updates to 30fps for better performance
+            if (deltaTime < 33) { // ~30fps
+                this.animationFrame = requestAnimationFrame(animate);
+                return;
+            }
+            
             this.lastFrameTime = currentTime;
             
             // Update marker position with frame-rate independent movement
-            const speedMultiplier = deltaTime / 16.67; // Normalize to 60fps
+            const speedMultiplier = deltaTime / 33.33; // Normalize to 30fps
             this.markerPosition += this.markerSpeed * this.markerDirection * speedMultiplier;
             
             // Bounce off edges
@@ -70,8 +92,9 @@ class QTERound {
                 this.markerPosition = Math.max(0, Math.min(96, this.markerPosition));
             }
             
-            // Apply position
-            this.marker.style.left = `${this.markerPosition}%`;
+            // Use transform instead of left for better performance
+            const translateX = (this.markerPosition / 100) * (qteBarWidth - markerWidth);
+            this.marker.style.transform = `translateX(${translateX}px)`;
             
             this.animationFrame = requestAnimationFrame(animate);
         };
@@ -133,10 +156,15 @@ class QTERound {
 
     complete(score, message) {
         this.isActive = false;
-        this.qteTimer.stop();
         
         if (this.animationFrame) {
             cancelAnimationFrame(this.animationFrame);
+            this.animationFrame = null;
+        }
+        
+        if (this.timerFrame) {
+            cancelAnimationFrame(this.timerFrame);
+            this.timerFrame = null;
         }
         
         // Flash the result
@@ -326,15 +354,19 @@ class QTERound {
         this.markerDirection = 1;
         this.hasBeenTapped = false;
         this.lastFrameTime = 0;
-        this.marker.style.left = '0%';
+        this.marker.style.transform = 'translateX(0)';
         this.marker.style.background = 'var(--pastel-purple)';
         this.marker.style.boxShadow = '0 0 10px var(--pastel-purple)';
-        this.qteTimerFill.style.width = '100%';
+        this.qteTimerFill.style.transform = 'scaleX(1)';
         
         // Stop any running animations or timers
         if (this.animationFrame) {
             cancelAnimationFrame(this.animationFrame);
             this.animationFrame = null;
+        }
+        if (this.timerFrame) {
+            cancelAnimationFrame(this.timerFrame);
+            this.timerFrame = null;
         }
         if (this.qteTimer) {
             this.qteTimer.stop();
@@ -375,6 +407,10 @@ class QTERound {
         if (this.animationFrame) {
             cancelAnimationFrame(this.animationFrame);
             this.animationFrame = null;
+        }
+        if (this.timerFrame) {
+            cancelAnimationFrame(this.timerFrame);
+            this.timerFrame = null;
         }
     }
 } 

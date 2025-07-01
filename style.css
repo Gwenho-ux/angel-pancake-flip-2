@@ -584,11 +584,13 @@ body {
 .marker {
     position: absolute;
     top: -5px;
+    left: 0;
     width: 4px;
     height: 70px;
     background: var(--pastel-purple);
     box-shadow: 0 0 8px var(--pastel-purple);
-    transition: left 0.016s linear;
+    /* Use transform for animation - better performance */
+    will-change: transform;
 }
 
 /* TAP Button */
@@ -639,7 +641,9 @@ body {
     height: 100%;
     background: linear-gradient(90deg, var(--pastel-blue), var(--pastel-pink));
     width: 100%;
-    transition: width 0.1s linear;
+    /* Use transform instead of width for better performance */
+    transform-origin: left;
+    will-change: transform;
 }
 
 /* Result Screen */
