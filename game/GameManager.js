@@ -40,6 +40,10 @@ class GameManager {
             this.handleQTEComplete(score, message);
         });
         
+        // Make GameManager accessible to QTERound for state checking
+        this.qteRound.gameManager = this;
+        window.gameManager = this;
+        
         // Create pancake counter UI
         this.createPancakeCounter();
         
@@ -83,6 +87,15 @@ class GameManager {
         timerValue.innerHTML = '⏰ 60';
         statsContainer.appendChild(timerDisplay);
         
+        // Add sound controls to game header for mobile
+        const soundControls = document.createElement('div');
+        soundControls.className = 'game-header-sound-controls';
+        soundControls.innerHTML = `
+            <button id="music-btn-header" class="music-button" title="Toggle Music">🎵</button>
+            <button id="mute-btn-header" class="mute-button" title="Toggle All Sounds">🔊</button>
+        `;
+        gameHeader.appendChild(soundControls);
+        
         this.pancakeCounterElement = document.getElementById('pancake-count');
     }
 
@@ -91,6 +104,11 @@ class GameManager {
         this.score = 0;
         this.qteCount = 0;
         this.isGameActive = true;
+        this.gameStartTime = Date.now(); // Store start time for difficulty calculation
+        
+        // Add game-active class to body and container for mobile layout
+        document.body.classList.add('game-active');
+        document.getElementById('game-container').classList.add('game-active');
         
         // Reset pancake state
         this.currentPancakeState = 'empty';
@@ -150,7 +168,7 @@ class GameManager {
             if (this.isGameActive) {
                 this.startQTE();
             }
-        }, 100); // Small delay to ensure game is ready
+        }, 50); // Minimal delay to ensure game is ready
         
         // Create continuous QTE intervals with NO breaks
         const qteTime = 3000; // 3 seconds for QTE
@@ -160,7 +178,7 @@ class GameManager {
         let currentTime = totalQTECycle; // Start immediately after first QTE
         
         // Keep scheduling QTEs until we run out of time
-        while (currentTime + totalQTECycle < 58000) { // Ensure QTE can complete within 60s
+        while (currentTime < 60000) { // Schedule QTEs for the full 60 seconds
             const timeout = setTimeout(() => {
                 if (this.isGameActive) {
                     this.startQTE();
@@ -179,31 +197,59 @@ class GameManager {
         }
     }
 
+    calculateDifficulty() {
+        // Get elapsed time (0-60 seconds)
+        const gameStartTime = this.gameStartTime || Date.now();
+        const elapsed = Math.min((Date.now() - gameStartTime) / 1000, 60);
+        const progress = elapsed / 60; // 0 to 1
+        
+        // Make changes visible immediately by adding QTE count factor
+        const qteProgress = Math.min(this.qteCount / 20, 1); // Max difficulty after 20 QTEs
+        const combinedProgress = Math.max(progress, qteProgress * 0.5); // Use whichever is higher
+        
+        // 1. Green zone gets smaller (70% -> 15%) - VERY dramatic change
+        const greenZoneSize = 70 - (combinedProgress * 55);
+        
+        // 2. Yellow line COMPLETELY random position every time
+        const minPos = 15 + (combinedProgress * 10); // Move away from edges as difficulty increases
+        const maxPos = 85 - (combinedProgress * 10);
+        const yellowPosition = minPos + (Math.random() * (maxPos - minPos));
+        
+        // 3. Speed increases (1x -> 2.5x)
+        const speedMultiplier = 1 + (combinedProgress * 1.5);
+        
+        console.log(`🎯 Difficulty Update: QTE#${this.qteCount}, Time=${elapsed.toFixed(1)}s, Progress=${(combinedProgress*100).toFixed(1)}%, Green=${greenZoneSize.toFixed(1)}%, Yellow=${yellowPosition.toFixed(1)}%, Speed=${speedMultiplier.toFixed(2)}x`);
+        
+        return { greenZoneSize, yellowPosition, speedMultiplier };
+    }
+
     startQTE() {
         if (!this.isGameActive) return;
         
         this.qteCount++;
         
-        // Different dialogue based on pancake phase
+        // Calculate and apply progressive difficulty
+        const difficulty = this.calculateDifficulty();
+        this.qteRound.setDifficulty(difficulty.greenZoneSize, difficulty.yellowPosition, difficulty.speedMultiplier);
+        
+        // Different dialogue based on pancake phase (only 2 flips now)
         let dialogue = "";
         if (this.currentPancakePhase === 0) {
-            dialogue = "Pour the batter!";
-            // Ensure pan is empty when starting pour phase
-            if (this.currentPancakeState !== 'empty') {
-                this.currentPancakeState = 'empty';
+            dialogue = "First flip!";
+            // Ensure pancake is raw when starting first flip
+            if (this.currentPancakeState === 'empty') {
+                this.currentPancakeState = 'raw';
                 this.updatePancakeVisual();
             }
-        } else if (this.currentPancakePhase === 1) {
-            dialogue = "First flip!";
         } else {
             dialogue = "Final flip!";
         }
         
-        // Show dialogue and start QTE immediately
+        // Show dialogue and start QTE immediately - no delay
         this.showDialogue(dialogue);
         this.qteRound.start();
         
-        // Hide dialogue after QTE starts
+        // Hide dialogue after 500ms
         setTimeout(() => {
             this.hideDialogue();
         }, 500);
@@ -216,79 +262,126 @@ class GameManager {
         // Store the QTE score for current pancake
         this.currentPancakeScores.push(score);
         
-        // Play appropriate sound effects based on score and phase
-        if (score > 0 && this.currentPancakePhase > 0) {
-            this.audioManager.playFlipSound(); // Play flip sound for actual flips
-            this.flipPancake();
-            // Increment flip count only for successful flips
-            this.pancakeFlipCount++;
-            
-            // Update pancake state immediately after successful flip
-            this.updatePancakeState();
-            
-            // Play success sound and create sparkle effects AFTER pancake flip animation (300ms)
-            if (score > 0) {
-                setTimeout(() => {
-                    // Perfect flip (score 10) gets fancy sparkles and bling sound
-                    if (score === 10) {
-                        this.audioManager.playSuccessSound();
-                        this.createFancySparkleEffect();
-                    } else {
-                        // All other successful flips get regular sparkles and happy sound
-                        this.audioManager.playSuccessSound();
-                        this.createSparkleEffect();
-                    }
-                }, 500); // Effects delay: 500ms after flip
-            }
-        } else if (this.currentPancakePhase === 0) {
-            // Pour phase - only show pancake if successful
-            if (score > 0) {
-                this.currentPancakeState = 'raw';
-                this.updatePancakeVisual();
-                this.audioManager.playPourSound();
-                this.audioManager.playSuccessSound();
-                this.createSparkleEffect();
-            }
-        } else {
-            // Play fail sound and effects AFTER attempted flip animation
-            setTimeout(() => {
-                this.audioManager.playFailSound();
-                this.createFailEffect();
-            }, 650); // After flip animation would complete
-        }
-        
         // Track missed/red zone flips (only count score 0 and negative scores)
         if (score === 0 || score < 0) {
             this.missedFlips++;
             console.log(`Red zone hit! Score: ${score}, Total missed flips: ${this.missedFlips}`);
+            
+            // Special case: timeout with pancake in pan (score 0 from timeout)
+            if (score === 0 && message === 'Too slow!' && this.currentPancakeState !== 'empty') {
+                this.handleTimeoutWithPancake();
+                return;
+            }
         } else {
             console.log(`Good flip! Score: ${score}, Total missed flips: ${this.missedFlips}`);
         }
         
-        // Check if pancake is complete (all 3 QTEs done)
-        if (this.currentPancakeScores.length === 3) {
-            this.completePancake();
+        // Handle flip scenarios (only 2 flips now)
+        if (score > 0) {
+            // Successful flip
+            this.audioManager.playFlipSound();
+            this.flipPancake();
+            this.pancakeFlipCount++;
+            
+            // Update pancake state after flip
+            this.updatePancakeState();
+            
+            // Play success sound and effects
+            setTimeout(() => {
+                if (score === 10) {
+                    this.audioManager.playSuccessSound();
+                    this.createFancySparkleEffect();
+                } else {
+                    this.audioManager.playSuccessSound();
+                    this.createSparkleEffect();
+                }
+            }, 300);
+            
+            this.currentPancakePhase++;
         } else {
-            // Only advance phase if current phase was successful or if we're past pour phase
-            if (this.currentPancakePhase === 0) {
-                // Pour phase - only advance if successful
-                if (score > 0) {
-                    this.currentPancakePhase++;
-                }
-                // If failed, stay at pour phase (don't add failed score)
-                else {
-                    this.currentPancakeScores.pop(); // Remove the failed pour score
-                }
+            // Failed flip - handle burnt pancake scenarios
+            this.handleBurntPancake();
+            return; // Exit early as burnt pancake handling takes over
+        }
+        
+        // Check if pancake is complete (2 QTEs done)
+        if (this.currentPancakeScores.length === 2) {
+            // After 2 flips, show flip animation, then perfect pancake, then fly to counter
+            if (this.pancakeFlipCount >= 2) {
+                // First show the flip animation for the final flip
+                this.flipPancake();
+                
+                // After flip animation, show perfect pancake
+                setTimeout(() => {
+                    this.currentPancakeState = 'perfect';
+                    this.updatePancakeVisual();
+                    
+                    // Show perfect pancake for 0.5 seconds, then fly to counter
+                    setTimeout(() => {
+                        this.animatePancakeToCounter(() => {
+                            this.totalPancakes++;
+                            this.updatePancakeCounter();
+                            this.resetPancakeCounters();
+                        });
+                    }, 500); // Show perfect pancake for 0.5 seconds
+                }, 600); // Wait for flip animation to complete (600ms)
             } else {
-                // Flip phases - always advance
-                this.currentPancakePhase++;
+                this.completePancake();
             }
         }
         
-        // Update pancake state based on flip progression
-        this.updatePancakeState();
+        // Update pancake visual
+        this.updatePancakeVisual();
+    }
+    
+    handleBurntPancake() {
+        // Play fail sound and effects immediately
+        this.audioManager.playFailSound();
+        this.createFailEffect();
         
-        // No dialogue delays - just update visual immediately
+        // Check if this is the second failed flip (burnt twice scenario)
+        if (this.missedFlips >= 2) {
+            // Show burnt pancake for 1 second then throw away
+            this.currentPancakeState = 'burnt';
+            this.updatePancakeVisual();
+            this.createBurntSmoke();
+            
+            setTimeout(() => {
+                this.animateBurntPancakeAway(() => {
+                    this.resetPancakeCounters();
+                });
+            }, 1000);
+        } else {
+            // First failed flip - continue to next phase
+            this.currentPancakePhase++;
+        }
+    }
+    
+    handleTimeoutWithPancake() {
+        // User didn't click when there was a pancake - burn it and throw away
+        this.currentPancakeState = 'burnt';
+        this.updatePancakeVisual();
+        
+        // Play fail sound and effects
+        this.audioManager.playFailSound();
+        this.createFailEffect();
+        this.createBurntSmoke();
+        
+        // After 1 second, throw away burnt pancake
+        setTimeout(() => {
+            this.animateBurntPancakeAway(() => {
+                this.resetPancakeCounters();
+            });
+        }, 1000);
+    }
+
+    resetPancakeCounters() {
+        this.currentPancakeScores = [];
+        this.currentPancakePhase = 0;
+        this.pancakeFlipCount = 0;
+        this.missedFlips = 0;
+        this.temporaryBurntState = false;
+        this.currentPancakeState = 'empty';
         this.updatePancakeVisual();
     }
     
@@ -323,13 +416,13 @@ class GameManager {
             // Show burnt pancake immediately
             this.currentPancakeState = 'burnt';
             this.updatePancakeVisual();
-        } else if (totalScore >= 25) {
+        } else if (totalScore >= 18) { // Perfect: 2x9+ scores
             grade = 'Perfect!';
             isCounted = true;
-        } else if (totalScore >= 18) {
+        } else if (totalScore >= 12) { // Good: 2x6+ scores  
             grade = 'Good!';
             isCounted = true;
-        } else if (totalScore >= 10) {
+        } else if (totalScore >= 6) { // Mid: 2x3+ scores
             grade = 'Mid!';
             isCounted = true;
         } else if (totalScore >= 1) {
@@ -343,7 +436,7 @@ class GameManager {
         // Show floating text with grade
         this.showPancakeGrade(grade, isCounted);
         
-        // Wait 0.5 second to show the final pancake state
+        // Wait 0.3 second to show the final pancake state
         setTimeout(() => {
             if (bothFlipsMissed) {
                 // Both flips missed - animate pancake flying to the right and fading out
@@ -378,7 +471,7 @@ class GameManager {
                 
                 // No need to show hint - next QTE will handle it
             }
-        }, 500); // Wait 0.5 second before flying/resetting
+        }, 300); // Wait 0.3 second before flying/resetting
         
         // Reset for next pancake
         this.currentPancakeScores = [];
@@ -594,6 +687,8 @@ class GameManager {
         this.pancakeElement.classList.add(this.currentPancakeState);
     }
 
+
+
     showDialogue(message) {
         this.dialogueBubble.textContent = message;
         this.dialogueBubble.classList.add('show');
@@ -787,6 +882,10 @@ class GameManager {
     endGame() {
         this.isGameActive = false;
         
+        // Remove game-active class from body and container
+        document.body.classList.remove('game-active');
+        document.getElementById('game-container').classList.remove('game-active');
+        
         // Stop cooking sound
         this.audioManager.stopCookingSound();
         
@@ -849,6 +948,10 @@ class GameManager {
         this.isGameActive = false;
         this.score = 0;
         this.qteCount = 0;
+        
+        // Remove game-active class from body and container
+        document.body.classList.remove('game-active');
+        document.getElementById('game-container').classList.remove('game-active');
         
         // Stop all audio
         this.audioManager.stopCookingSound();

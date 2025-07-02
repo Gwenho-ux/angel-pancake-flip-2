@@ -9,13 +9,21 @@ class QTERound {
         
         this.markerPosition = 0;
         this.markerDirection = 1;
-        this.markerSpeed = 2.8; // Increased speed - faster movement makes timing harder
+        this.baseSpeed = 2.0; // Base speed for difficulty scaling
+        this.markerSpeed = this.baseSpeed;
         this.animationFrame = null;
         this.timerFrame = null;
         this.qteTimer = null;
         this.hasBeenTapped = false;
         this.isActive = false;
         this.lastFrameTime = 0;
+        
+        // Difficulty parameters - will be updated by GameManager
+        this.difficulty = {
+            greenZoneSize: 50,    // Green zone size as percentage (50% = 25-75%)
+            yellowPosition: 50,   // Yellow line position as percentage
+            speedMultiplier: 1.0  // Speed multiplier for marker movement
+        };
         
         this.init();
     }
@@ -35,11 +43,63 @@ class QTERound {
         this.disableQTE(); // Start with QTE disabled
     }
 
+    /**
+     * Set difficulty parameters for this QTE round
+     * @param {number} greenZoneSize - Size of green zone (25-75 means 50% size)
+     * @param {number} yellowPosition - Position of yellow line (0-100%)
+     * @param {number} speedMultiplier - Speed multiplier for marker movement
+     */
+    setDifficulty(greenZoneSize, yellowPosition, speedMultiplier) {
+        this.difficulty.greenZoneSize = Math.max(15, Math.min(80, greenZoneSize)); // Clamp 15-80%
+        this.difficulty.yellowPosition = Math.max(10, Math.min(90, yellowPosition)); // Clamp 10-90%
+        this.difficulty.speedMultiplier = Math.max(0.5, Math.min(4.0, speedMultiplier)); // Clamp 0.5-4.0x
+        
+        // Update marker speed
+        this.markerSpeed = this.baseSpeed * this.difficulty.speedMultiplier;
+        
+        console.log(`🎮 QTE Difficulty Applied: Green=${this.difficulty.greenZoneSize.toFixed(1)}%, Yellow=${this.difficulty.yellowPosition.toFixed(1)}%, Speed=${this.difficulty.speedMultiplier.toFixed(2)}x (${this.markerSpeed.toFixed(2)})`);
+        
+        // Update visual zones
+        this.updateVisualZones();
+    }
+
+    /**
+     * Update the visual appearance of QTE zones based on current difficulty
+     */
+    updateVisualZones() {
+        const greenZone = this.container.querySelector('.green-zone');
+        const yellowLine = this.container.querySelector('.yellow-line');
+        const leftRedZone = this.container.querySelector('.red-zone.left');
+        const rightRedZone = this.container.querySelector('.red-zone.right');
+        
+        if (greenZone && yellowLine && leftRedZone && rightRedZone) {
+            // Calculate zone sizes
+            const redZoneSize = (100 - this.difficulty.greenZoneSize) / 2;
+            
+            // Keep yellow line always blue
+            yellowLine.style.backgroundColor = '#4DA8E5';
+            yellowLine.style.boxShadow = '0 0 8px #4DA8E5';
+            
+            // Update zone widths
+            leftRedZone.style.width = `${redZoneSize}%`;
+            greenZone.style.width = `${this.difficulty.greenZoneSize}%`;
+            rightRedZone.style.width = `${redZoneSize}%`;
+            
+            // Update yellow line position - yellowPosition is already calculated as absolute percentage
+            yellowLine.style.left = `${this.difficulty.yellowPosition}%`;
+            
+            console.log(`🎨 Visual Zones Updated: LeftRed=${redZoneSize.toFixed(1)}%, Green=${this.difficulty.greenZoneSize.toFixed(1)}%, RightRed=${redZoneSize.toFixed(1)}%, Yellow=${this.difficulty.yellowPosition.toFixed(1)}%`);
+        }
+    }
+
     start() {
         this.reset();
         this.enableQTE();
         this.isActive = true;
         this.container.classList.add('active');
+        
+        // Apply current difficulty settings
+        this.updateVisualZones();
         
         // Start marker animation
         this.animateMarker();
@@ -61,7 +121,15 @@ class QTERound {
                 this.timerFrame = requestAnimationFrame(updateTimer);
             } else {
                 if (!this.hasBeenTapped) {
-                    this.complete(-3, 'Too slow!'); // No tap penalty
+                    // Check if there's a pancake in the pan (not empty) - this means timeout during flip
+                    const gameManager = window.gameManager || this.gameManager;
+                    const hasPancake = gameManager && gameManager.currentPancakeState !== 'empty';
+                    
+                    if (hasPancake) {
+                        this.complete(0, 'Too slow!'); // Timeout with pancake = burnt
+                    } else {
+                        this.complete(-3, 'Too slow!'); // Timeout without pancake = just penalty
+                    }
                 }
             }
         };
@@ -124,33 +192,58 @@ class QTERound {
     }
 
     calculateScore() {
-        // Bar zones: 0-25% red, 25-75% green (with 50% being yellow line), 75-100% red
         const position = this.markerPosition;
         let score;
         let zone;
         
-        // Perfect hit on yellow area (48-52%) - made smaller and more precise
-        if (position >= 48 && position <= 52) {
+        // Calculate dynamic zones based on current difficulty
+        const redZoneSize = (100 - this.difficulty.greenZoneSize) / 2;
+        const greenStart = redZoneSize;
+        const greenEnd = greenStart + this.difficulty.greenZoneSize;
+        
+        // Yellow line position within green zone
+        const greenRange = this.difficulty.greenZoneSize;
+        const yellowCenter = greenStart + (this.difficulty.yellowPosition - 50) * (greenRange / 100);
+        
+        // Perfect zone around yellow line (±2% of total bar)
+        const perfectZoneSize = 4; // 4% total width
+        const perfectStart = Math.max(greenStart, yellowCenter - perfectZoneSize / 2);
+        const perfectEnd = Math.min(greenEnd, yellowCenter + perfectZoneSize / 2);
+        
+        // Good zones (inner green, closer to yellow line)
+        const goodZoneSize = this.difficulty.greenZoneSize * 0.3; // 30% of green zone
+        const goodStart1 = Math.max(greenStart, yellowCenter - goodZoneSize / 2);
+        const goodEnd1 = perfectStart;
+        const goodStart2 = perfectEnd;
+        const goodEnd2 = Math.min(greenEnd, yellowCenter + goodZoneSize / 2);
+        
+        // Decent zones (outer green, further from yellow line)
+        const decentStart1 = greenStart;
+        const decentEnd1 = goodStart1;
+        const decentStart2 = goodEnd2;
+        const decentEnd2 = greenEnd;
+        
+        // Determine score based on position
+        if (position >= perfectStart && position <= perfectEnd) {
             score = 10;
             zone = 'Yellow (Perfect)';
         }
-        // Close inside green (40-48% or 52-60%) - reduced range
-        else if ((position >= 40 && position < 48) || (position > 52 && position <= 60)) {
+        else if ((position >= goodStart1 && position < goodEnd1) || 
+                 (position > goodStart2 && position <= goodEnd2)) {
             score = 7;
             zone = 'Green (Good)';
         }
-        // Near edge of green (30-40% or 60-70%) - reduced range
-        else if ((position >= 30 && position < 40) || (position > 60 && position <= 70)) {
+        else if ((position >= decentStart1 && position < decentEnd1) || 
+                 (position > decentStart2 && position <= decentEnd2)) {
             score = 5;
             zone = 'Green (Decent)';
         }
-        // Red zone - expanded
         else {
             score = 0;
             zone = 'Red (Miss)';
         }
         
-        console.log(`QTE Result: Position ${position.toFixed(1)}% -> ${zone} -> Score ${score}`);
+        console.log(`QTE Result: Position ${position.toFixed(1)}% -> ${zone} -> Score ${score} (Green: ${greenStart.toFixed(1)}-${greenEnd.toFixed(1)}%, Yellow: ${yellowCenter.toFixed(1)}%)`);
         return score;
     }
 

@@ -5,7 +5,10 @@ class StartScreen {
         this.screen = document.getElementById('start-screen');
         this.playerNameInput = document.getElementById('player-name');
         this.startButton = new Button(document.getElementById('start-btn'), () => this.handleStart());
-        this.startLeaderboardList = document.getElementById('start-leaderboard-list');
+        this.leaderboardButton = new Button(document.getElementById('leaderboard-btn'), () => this.showLeaderboardPopup());
+        this.leaderboardPopup = document.getElementById('leaderboard-popup');
+        this.popupLeaderboardList = document.getElementById('popup-leaderboard-list');
+        this.closePopupButton = document.getElementById('close-leaderboard-popup');
         
         this.init();
     }
@@ -29,23 +32,30 @@ class StartScreen {
 
         // Initially disable start button
         this.startButton.disable();
+        
+        // Setup popup close functionality
+        this.closePopupButton.addEventListener('click', () => this.hideLeaderboardPopup());
+        this.leaderboardPopup.addEventListener('click', (e) => {
+            if (e.target === this.leaderboardPopup) {
+                this.hideLeaderboardPopup();
+            }
+        });
     }
 
     show() {
         this.hideAllScreens();
         this.screen.classList.add('active');
-        // Make container shorter for start screen
+        // Make container shorter for start screen and add background to body
         document.getElementById('game-container').classList.add('start-screen-active');
+        document.body.classList.add('start-screen-active');
         this.playerNameInput.focus();
-        
-        // Update leaderboard on start screen
-        this.updateStartLeaderboard();
     }
 
     hide() {
         this.screen.classList.remove('active');
-        // Remove shorter container class when leaving start screen
+        // Remove shorter container class and background when leaving start screen
         document.getElementById('game-container').classList.remove('start-screen-active');
+        document.body.classList.remove('start-screen-active');
     }
 
     handleStart() {
@@ -63,17 +73,26 @@ class StartScreen {
         this.gameManager.startGame(playerName);
     }
 
-    updateStartLeaderboard() {
+    showLeaderboardPopup() {
+        this.updatePopupLeaderboard();
+        this.leaderboardPopup.classList.add('show');
+    }
+
+    hideLeaderboardPopup() {
+        this.leaderboardPopup.classList.remove('show');
+    }
+
+    updatePopupLeaderboard() {
         if (!window.leaderboard) return;
         
-        const scores = window.leaderboard.getTopScores(5); // Get top 5 scores
+        const scores = window.leaderboard.getTopScores(10); // Get top 10 scores for popup
         
         if (scores.length === 0) {
-            this.startLeaderboardList.innerHTML = '<p style="text-align: center; color: #666; font-style: italic;">No scores yet - be the first!</p>';
+            this.popupLeaderboardList.innerHTML = '<p style="text-align: center; color: #666; font-style: italic; padding: 20px;">No scores yet - be the first!</p>';
             return;
         }
         
-        this.startLeaderboardList.innerHTML = scores.map((entry, index) => `
+        this.popupLeaderboardList.innerHTML = scores.map((entry, index) => `
             <div class="leaderboard-entry">
                 <span class="leaderboard-rank">${index + 1}</span>
                 <span class="leaderboard-name">${entry.name}</span>

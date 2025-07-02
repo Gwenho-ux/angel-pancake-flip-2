@@ -70,51 +70,55 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Add music button functionality for both global and game-specific buttons
-    const musicButtons = [document.getElementById('music-btn'), document.getElementById('music-btn-global')];
-    musicButtons.forEach(musicButton => {
-        if (musicButton) {
-            musicButton.addEventListener('click', () => {
-                const isMusicMuted = gameManager.audioManager.toggleMusic();
-                const newText = isMusicMuted ? '🎶' : '🎵';
-                
-                // Update both buttons
-                musicButtons.forEach(btn => {
-                    if (btn) {
-                        btn.textContent = newText;
-                        btn.classList.toggle('muted', isMusicMuted);
-                    }
-                });
-                
-                // Re-initialize audio if needed
-                if (!isMusicMuted && !audioInitialized) {
-                    initializeAudio();
-                }
+    // Add music button functionality for all music buttons
+    const getMusicButtons = () => [
+        document.getElementById('music-btn'), 
+        document.getElementById('music-btn-global'),
+        document.getElementById('music-btn-header')
+    ].filter(btn => btn);
+    
+    // Use event delegation for dynamically created buttons
+    document.addEventListener('click', (e) => {
+        if (e.target.matches('#music-btn, #music-btn-global, #music-btn-header')) {
+            const isMusicMuted = gameManager.audioManager.toggleMusic();
+            const newText = isMusicMuted ? '🎶' : '🎵';
+            
+            // Update all music buttons
+            getMusicButtons().forEach(btn => {
+                btn.textContent = newText;
+                btn.classList.toggle('muted', isMusicMuted);
             });
+            
+            // Re-initialize audio if needed
+            if (!isMusicMuted && !audioInitialized) {
+                initializeAudio();
+            }
         }
     });
     
-    // Add mute button functionality for both global and game-specific buttons
-    const muteButtons = [document.getElementById('mute-btn'), document.getElementById('mute-btn-global')];
-    muteButtons.forEach(muteButton => {
-        if (muteButton) {
-            muteButton.addEventListener('click', () => {
-                const isMuted = gameManager.audioManager.toggleMute();
-                const newText = isMuted ? '🔇' : '🔊';
-                
-                // Update both buttons
-                muteButtons.forEach(btn => {
-                    if (btn) {
-                        btn.textContent = newText;
-                        btn.classList.toggle('muted', isMuted);
-                    }
-                });
-                
-                // Re-initialize audio if needed
-                if (!isMuted && !audioInitialized) {
-                    initializeAudio();
-                }
+    // Add mute button functionality for all mute buttons
+    const getMuteButtons = () => [
+        document.getElementById('mute-btn'), 
+        document.getElementById('mute-btn-global'),
+        document.getElementById('mute-btn-header')
+    ].filter(btn => btn);
+    
+    // Use event delegation for dynamically created buttons
+    document.addEventListener('click', (e) => {
+        if (e.target.matches('#mute-btn, #mute-btn-global, #mute-btn-header')) {
+            const isMuted = gameManager.audioManager.toggleMute();
+            const newText = isMuted ? '🔇' : '🔊';
+            
+            // Update all mute buttons
+            getMuteButtons().forEach(btn => {
+                btn.textContent = newText;
+                btn.classList.toggle('muted', isMuted);
             });
+            
+            // Re-initialize audio if needed
+            if (!isMuted && !audioInitialized) {
+                initializeAudio();
+            }
         }
     });
     

@@ -7,12 +7,13 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Global Sound Controls for non-game screens - outside container -->
+    <div class="global-sound-controls global-only">
+        <button id="music-btn-global" class="music-button" title="Toggle Music">🎵</button>
+        <button id="mute-btn-global" class="mute-button" title="Toggle All Sounds">🔊</button>
+    </div>
+    
     <div id="game-container">
-        <!-- Global Sound Controls for non-game screens -->
-        <div class="global-sound-controls global-only">
-            <button id="music-btn-global" class="music-button" title="Toggle Music">🎵</button>
-            <button id="mute-btn-global" class="mute-button" title="Toggle All Sounds">🔊</button>
-        </div>
 
         <!-- Start Screen -->
         <div id="start-screen" class="screen active">
@@ -22,13 +23,8 @@
             <h1 class="game-title">Angel's Pancake Flip</h1>
             <div class="input-container">
                 <input type="text" id="player-name" placeholder="Enter your name" maxlength="20">
-                <button id="start-btn" class="neon-btn">START GAME</button>
-            </div>
-            
-            <!-- Leaderboard moved here under landing container -->
-            <div class="start-screen-leaderboard">
-                <h3 class="leaderboard-title-small">LEADERBOARD</h3>
-                <div id="start-leaderboard-list" class="leaderboard-list-small"></div>
+                <button id="start-btn" class="neon-btn">Start Cook!</button>
+                <button id="leaderboard-btn" class="neon-btn secondary">LEADERBOARD</button>
             </div>
         </div>
 
@@ -44,10 +40,6 @@
                         <span class="label">TIME</span>
                         <span id="game-timer">60</span>
                     </div>
-                </div>
-                <div class="game-sound-controls">
-                    <button id="music-btn" class="music-button" title="Toggle Music">🎵</button>
-                    <button id="mute-btn" class="mute-button" title="Toggle All Sounds">🔊</button>
                 </div>
             </div>
 
@@ -94,6 +86,17 @@
             <h2 class="leaderboard-title">LEADERBOARD</h2>
             <div id="leaderboard-list" class="leaderboard-list"></div>
             <button id="back-from-leaderboard-btn" class="neon-btn">BACK</button>
+        </div>
+
+        <!-- Leaderboard Popup -->
+        <div id="leaderboard-popup" class="popup-overlay">
+            <div class="popup-content">
+                <div class="popup-header">
+                    <h2 class="popup-title">LEADERBOARD</h2>
+                    <button id="close-leaderboard-popup" class="close-popup-btn">✕</button>
+                </div>
+                <div id="popup-leaderboard-list" class="popup-leaderboard-list"></div>
+            </div>
         </div>
     </div>
 

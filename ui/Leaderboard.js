@@ -129,4 +129,13 @@ class Leaderboard {
     isHighScore(score) {
         return score > this.getHighScore();
     }
+
+    getTopScores(count = 10) {
+        return this.scores.slice(0, count).map(entry => ({
+            name: entry.name,
+            totalScore: entry.score,
+            totalPancakes: entry.totalPancakes || 0,
+            timestamp: entry.timestamp
+        }));
+    }
 } 
