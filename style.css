@@ -725,6 +725,18 @@ body {
     will-change: transform;
 }
 
+/* Pan image styling - match pancake size */
+.pan-image {
+    width: 200px;
+    height: 200px;
+    object-fit: contain;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+}
+
 /* Result Screen */
 .result-image {
     width: 300px;
@@ -733,7 +745,7 @@ body {
     margin: 20px auto;
     display: block;
     border-radius: 15px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    /* Removed shadow as requested */
 }
 
 .result-stats-container {
@@ -864,6 +876,14 @@ body {
 #start-screen, #result-screen, #leaderboard-screen {
     background: rgba(255, 255, 255, 0.65);
     backdrop-filter: blur(8px);
+}
+
+/* Result screen specific styling for proper scrolling */
+#result-screen {
+    overflow-y: auto;
+    max-height: 100vh;
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 /* Game screen - transparent background */
