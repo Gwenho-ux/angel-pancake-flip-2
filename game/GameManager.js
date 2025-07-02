@@ -4,7 +4,6 @@ class GameManager {
         this.currentPlayer = '';
         this.score = 0;
         this.qteCount = 0;
-        this.maxQTEs = 10;
         this.gameTimer = null;
         this.qteRound = null;
         this.scoreDisplay = null;
@@ -154,31 +153,24 @@ class GameManager {
         }, 100); // Small delay to ensure game is ready
         
         // Create continuous QTE intervals with NO breaks
-        const qteIntervals = [];
         const qteTime = 3000; // 3 seconds for QTE
         const totalQTECycle = qteTime; // Just QTE time, no dialogue delays
         
-        // Generate intervals with NO breaks for completely continuous gameplay
+        // Generate continuous QTEs throughout the entire 60 seconds
         let currentTime = totalQTECycle; // Start immediately after first QTE
         
-        for (let i = 1; i < this.maxQTEs; i++) { // Start from 1 since first is immediate
-            if (currentTime + totalQTECycle < 58000) { // Ensure QTE can complete within 60s
-                qteIntervals.push(currentTime);
-                
-                // Next QTE: NO break - start immediately after previous cycle
-                currentTime += totalQTECycle;
-            }
-        }
-        
-        // Schedule remaining QTEs at their intervals
-        qteIntervals.forEach((time, index) => {
+        // Keep scheduling QTEs until we run out of time
+        while (currentTime + totalQTECycle < 58000) { // Ensure QTE can complete within 60s
             const timeout = setTimeout(() => {
                 if (this.isGameActive) {
                     this.startQTE();
                 }
-            }, time);
+            }, currentTime);
             this.qteTimeouts.push(timeout);
-        });
+            
+            // Next QTE: NO break - start immediately after previous cycle
+            currentTime += totalQTECycle;
+        }
     }
 
     updatePancakeCounter() {
@@ -188,7 +180,7 @@ class GameManager {
     }
 
     startQTE() {
-        if (!this.isGameActive || this.qteCount >= this.maxQTEs) return;
+        if (!this.isGameActive) return;
         
         this.qteCount++;
         
@@ -298,11 +290,6 @@ class GameManager {
         
         // No dialogue delays - just update visual immediately
         this.updatePancakeVisual();
-        
-        // Check if game should end
-        if (this.qteCount >= this.maxQTEs) {
-            setTimeout(() => this.endGame(), 1000);
-        }
     }
     
     flipPancake() {
