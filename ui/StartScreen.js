@@ -96,10 +96,8 @@ class StartScreen {
             <div class="leaderboard-entry">
                 <span class="leaderboard-rank">${index + 1}</span>
                 <span class="leaderboard-name">${entry.name}</span>
-                <div class="leaderboard-info">
-                    <span class="leaderboard-score">🏆 ${entry.totalScore}</span>
-                    <span class="leaderboard-pancakes">🥞 ${entry.totalPancakes}</span>
-                </div>
+                <span class="leaderboard-pancakes">🥞 ${entry.totalPancakes}</span>
+                <span class="leaderboard-score">🏆 ${entry.totalScore}</span>
             </div>
         `).join('');
     }

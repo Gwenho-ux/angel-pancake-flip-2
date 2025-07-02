@@ -3,7 +3,7 @@
     --pastel-pink: #E8A5B0;
     --pastel-blue: #7BB8D4;
     --pastel-purple: #C890C8;
-    --pastel-yellow: #F0EBBB;
+    --pastel-yellow: #fef285;
     --pastel-green: #88E088;
     --pastel-peach: #EECAA8;
     --light-bg: #FFF5F5;
@@ -164,6 +164,7 @@ body {
     -webkit-text-fill-color: transparent;
     color: transparent;
     animation: titleGradient 3s ease-in-out infinite, titleFloat 2s ease-in-out infinite alternate;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 16px rgba(255, 255, 255, 0.9));
 }
 
 /* Title animations */
@@ -188,6 +189,18 @@ body {
     }
 }
 
+/* New fixed-size pan container */
+.pan-container {
+    width: 375px;
+    height: 375px;
+    margin: 20px auto;
+    position: relative;
+    display: inline-block;
+    transition: transform 0.1s ease;
+    flex-shrink: 0; /* Prevent scaling */
+}
+
+/* Legacy angel-placeholder for start screen compatibility */
 .angel-placeholder {
     width: 375px;
     height: 375px;
@@ -205,7 +218,8 @@ body {
     display: none;
 }
 
-.angel-placeholder.shaking {
+.angel-placeholder.shaking,
+.pan-container.shaking {
     animation: shake 0.6s ease-in-out;
 }
 
@@ -222,19 +236,21 @@ body {
     90% { transform: translateX(-1px); }
 }
 
-/* Pancake visual states */
+/* Pancake visual states - fixed size positioning */
 .pancake {
     position: absolute;
-    top: 50%;
-    left: 50%;
+    top: 37.5%; /* Move up 10% more (was 45%, now 40.5%) */
+    left: 42%; /* Move left 10% more (was 47%, now 42.3%) */
     transform: translate(-50%, -50%);
-    width: 150px;
-    height: 150px;
+    width: 160px; /* 20% bigger than 120px */
+    height: 160px; /* 20% bigger than 120px */
     background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
     transition: all 0.3s ease;
-    z-index: 1;
+    z-index: 2; /* Above pan */
+    /* Add subtle shadow to make pancake appear inside pan */
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.2));
 }
 
 .pancake.raw {
@@ -820,16 +836,13 @@ body {
     will-change: transform;
 }
 
-/* Pan image styling - properly sized to match the background pan */
+/* Pan image styling - responsive and visible */
 .pan-image {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    position: absolute;
-    top: 0;
-    left: 0;
+    display: block;
     z-index: 1;
-    opacity: 0; /* Hide the extra pan image since background already has one */
 }
 
 /* Result Screen */
@@ -920,9 +933,10 @@ body {
 }
 
 .leaderboard-entry {
-    display: flex;
-    justify-content: space-between;
+    display: grid !important;
+    grid-template-columns: 60px 1fr 80px 80px !important; /* Rank | Name | Pancakes | Score - completely separate */
     align-items: center;
+    gap: 15px;
     padding: 15px 20px;
     margin: 10px 0;
     background: rgba(123, 184, 212, 0.18);
@@ -940,31 +954,35 @@ body {
     font-size: 1.5em;
     font-weight: bold;
     color: var(--pastel-purple);
-    width: 50px;
+    text-align: center;
+    grid-column: 1; /* Force into column 1 */
+    justify-self: center;
 }
 
 .leaderboard-name {
-    flex: 1;
     text-align: left;
-    padding: 0 20px;
+    font-weight: 600;
+    color: var(--dark-text);
+    grid-column: 2; /* Force into column 2 */
+    justify-self: start;
 }
 
-.leaderboard-info {
-    display: flex;
-    align-items: center;
-    gap: 15px;
+.leaderboard-pancakes {
+    font-size: 1em;
+    color: var(--pastel-blue);
+    font-weight: bold;
+    text-align: left;
+    grid-column: 3; /* Force into column 3 */
+    justify-self: center;
 }
 
 .leaderboard-score {
     font-size: 1.2em;
     font-weight: bold;
     color: var(--pastel-pink);
-}
-
-.leaderboard-pancakes {
-    font-size: 1em;
-    color: var(--pastel-yellow);
-    font-weight: bold;
+    text-align: left;
+    grid-column: 4; /* Force into column 4 */
+    justify-self: center;
 }
 
 /* Screen-specific backgrounds */
@@ -1053,8 +1071,6 @@ body.start-screen-active {
     max-height: 80vh;
     overflow-y: auto;
     position: relative;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    border: 2px solid var(--pastel-purple);
 }
 
 .popup-header {
@@ -1096,6 +1112,10 @@ body.start-screen-active {
 }
 
 .popup-leaderboard-list .leaderboard-entry {
+    display: grid !important;
+    grid-template-columns: 50px 1fr 100px 100px !important; /* Completely separate columns */
+    align-items: center;
+    gap: 10px;
     padding: 12px 15px;
     margin: 8px 0;
     background: rgba(123, 184, 212, 0.15);
@@ -1194,13 +1214,7 @@ body.start-screen-active {
         display: none !important;
     }
     
-    /* Sound controls in game header */
-    .game-header-sound-controls {
-        display: flex;
-        gap: 4px;
-        flex-shrink: 0;
-        align-items: center;
-    }
+    /* Sound controls removed - only global controls at top-right */
     
     /* Game area in middle - flexible height */
     .game-area {
@@ -1224,17 +1238,23 @@ body.start-screen-active {
         max-height: 60vh;
     }
     
-    /* Make angel placeholder fit mobile */
+    /* Keep pan container fixed size on mobile - no scaling */
+    .pan-container {
+        width: 375px; /* Fixed size - no scaling */
+        height: 375px; /* Fixed size - no scaling */
+        margin: 0;
+    }
+    
+    /* Legacy angel-placeholder for start screen */
     .angel-placeholder {
         width: min(280px, 80vw);
         height: min(280px, 80vw);
         margin: 0;
     }
     
-    /* Adjust pancake size for mobile */
+    /* Pancake keeps fixed size on mobile - no scaling */
     .pancake {
-        width: min(120px, 30vw);
-        height: min(120px, 30vw);
+        /* Fixed 144px size maintained on all screen sizes */
     }
     
     /* Hide QTE section on start screen and result screen */
@@ -1312,5 +1332,22 @@ body.start-screen-active {
         display: flex;
         align-items: center;
         justify-content: center;
+    }
+    
+    /* Mobile result screen fixes */
+    /* Hide game pancakes on result screen */
+    #game-container.result-screen-active #game-screen .pancake,
+    #game-container.result-screen-active #start-screen .pancake {
+        display: none !important;
+    }
+    
+    #result-screen .result-stats-line .score-display {
+        padding: 20px 15px; /* Increase height from default 12px to 20px */
+        min-height: 80px; /* Ensure minimum height */
+    }
+    
+    #result-screen .roast-message {
+        margin-top: 30px; /* Add more space above roast message */
+        margin-bottom: 30px; /* Add more space below roast message */
     }
 } 

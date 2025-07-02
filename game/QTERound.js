@@ -85,8 +85,10 @@ class QTERound {
             greenZone.style.width = `${this.difficulty.greenZoneSize}%`;
             rightRedZone.style.width = `${redZoneSize}%`;
             
-            // Update yellow line position - yellowPosition is already calculated as absolute percentage
-            yellowLine.style.left = `${this.difficulty.yellowPosition}%`;
+            // Position yellow line INSIDE the green zone (matching scoring logic)
+            const yellowRelativePosition = (this.difficulty.yellowPosition / 100) * this.difficulty.greenZoneSize;
+            const yellowAbsolutePosition = redZoneSize + yellowRelativePosition;
+            yellowLine.style.left = `${yellowAbsolutePosition}%`;
             
             console.log(`🎨 Visual Zones Updated: LeftRed=${redZoneSize.toFixed(1)}%, Green=${this.difficulty.greenZoneSize.toFixed(1)}%, RightRed=${redZoneSize.toFixed(1)}%, Yellow=${this.difficulty.yellowPosition.toFixed(1)}%`);
         }
@@ -104,37 +106,37 @@ class QTERound {
         // Start marker animation
         this.animateMarker();
         
-        // Start QTE timer (3 seconds) - optimized for performance
-        const startTime = Date.now();
-        const duration = 3000; // 3 seconds in ms
+        // COMPLETELY REWRITTEN TIMEOUT SYSTEM - BULLETPROOF!
+        console.log(`🚀 QTE TIMER STARTED: 3 second countdown begins NOW`);
         
-        const updateTimer = () => {
+        // Use setTimeout instead of requestAnimationFrame for reliability
+        this.qteTimeout = setTimeout(() => {
+            console.log(`⏰ TIMEOUT HIT! hasBeenTapped=${this.hasBeenTapped}, isActive=${this.isActive}`);
+            
+            if (!this.hasBeenTapped && this.isActive) {
+                console.log(`💥 FORCING TIMEOUT COMPLETION - PANCAKE WILL BURN!`);
+                this.complete(0, 'Too slow!');
+            }
+        }, 3000);
+        
+        // Visual timer animation (separate from timeout logic)
+        const startTime = Date.now();
+        const duration = 3000;
+        
+        const updateVisualTimer = () => {
             if (!this.isActive) return;
             
             const elapsed = Date.now() - startTime;
             const progress = Math.min(elapsed / duration, 1);
             
-            // Use transform for better performance
             this.qteTimerFill.style.transform = `scaleX(${1 - progress})`;
             
             if (progress < 1) {
-                this.timerFrame = requestAnimationFrame(updateTimer);
-            } else {
-                if (!this.hasBeenTapped) {
-                    // Check if there's a pancake in the pan (not empty) - this means timeout during flip
-                    const gameManager = window.gameManager || this.gameManager;
-                    const hasPancake = gameManager && gameManager.currentPancakeState !== 'empty';
-                    
-                    if (hasPancake) {
-                        this.complete(0, 'Too slow!'); // Timeout with pancake = burnt
-                    } else {
-                        this.complete(-3, 'Too slow!'); // Timeout without pancake = just penalty
-                    }
-                }
+                this.timerFrame = requestAnimationFrame(updateVisualTimer);
             }
         };
         
-        this.timerFrame = requestAnimationFrame(updateTimer);
+        this.timerFrame = requestAnimationFrame(updateVisualTimer);
     }
 
     animateMarker() {
@@ -196,54 +198,49 @@ class QTERound {
         let score;
         let zone;
         
-        // Calculate dynamic zones based on current difficulty
+        // CORRECT ZONE CALCULATION - Bar layout: [Red][Green][Red]
         const redZoneSize = (100 - this.difficulty.greenZoneSize) / 2;
         const greenStart = redZoneSize;
         const greenEnd = greenStart + this.difficulty.greenZoneSize;
         
-        // Yellow line position within green zone
-        const greenRange = this.difficulty.greenZoneSize;
-        const yellowCenter = greenStart + (this.difficulty.yellowPosition - 50) * (greenRange / 100);
+        // FORCE yellow line to be INSIDE the green zone (this was the main bug!)
+        const yellowCenter = greenStart + (this.difficulty.yellowPosition / 100) * this.difficulty.greenZoneSize;
         
-        // Perfect zone around yellow line (±2% of total bar)
-        const perfectZoneSize = 4; // 4% total width
+        // Perfect zone: ±3% around yellow line (absolute percentage)
+        const perfectZoneSize = 6; // 6% total (±3% each side)
         const perfectStart = Math.max(greenStart, yellowCenter - perfectZoneSize / 2);
         const perfectEnd = Math.min(greenEnd, yellowCenter + perfectZoneSize / 2);
         
-        // Good zones (inner green, closer to yellow line)
-        const goodZoneSize = this.difficulty.greenZoneSize * 0.3; // 30% of green zone
-        const goodStart1 = Math.max(greenStart, yellowCenter - goodZoneSize / 2);
-        const goodEnd1 = perfectStart;
-        const goodStart2 = perfectEnd;
-        const goodEnd2 = Math.min(greenEnd, yellowCenter + goodZoneSize / 2);
+        // Good zone: ±8% around yellow line (absolute percentage) 
+        const goodZoneSize = 16; // 16% total (±8% each side)
+        const goodStart = Math.max(greenStart, yellowCenter - goodZoneSize / 2);
+        const goodEnd = Math.min(greenEnd, yellowCenter + goodZoneSize / 2);
         
-        // Decent zones (outer green, further from yellow line)
-        const decentStart1 = greenStart;
-        const decentEnd1 = goodStart1;
-        const decentStart2 = goodEnd2;
-        const decentEnd2 = greenEnd;
-        
-        // Determine score based on position
+        // SIMPLE SCORING LOGIC - no overlapping zones
         if (position >= perfectStart && position <= perfectEnd) {
             score = 10;
-            zone = 'Yellow (Perfect)';
+            zone = 'Perfect (Yellow Line)';
         }
-        else if ((position >= goodStart1 && position < goodEnd1) || 
-                 (position > goodStart2 && position <= goodEnd2)) {
+        else if (position >= goodStart && position <= goodEnd) {
             score = 7;
-            zone = 'Green (Good)';
+            zone = 'Good (Near Yellow)';
         }
-        else if ((position >= decentStart1 && position < decentEnd1) || 
-                 (position > decentStart2 && position <= decentEnd2)) {
+        else if (position >= greenStart && position <= greenEnd) {
             score = 5;
-            zone = 'Green (Decent)';
+            zone = 'Decent (Green Zone)';
         }
         else {
             score = 0;
-            zone = 'Red (Miss)';
+            zone = 'Miss (Red Zone)';
         }
         
-        console.log(`QTE Result: Position ${position.toFixed(1)}% -> ${zone} -> Score ${score} (Green: ${greenStart.toFixed(1)}-${greenEnd.toFixed(1)}%, Yellow: ${yellowCenter.toFixed(1)}%)`);
+        console.log(`🎯 QTE SCORING RESULT:`);
+        console.log(`   Marker Position: ${position.toFixed(1)}%`);
+        console.log(`   Green Zone: ${greenStart.toFixed(1)}% - ${greenEnd.toFixed(1)}%`);
+        console.log(`   Yellow Line: ${yellowCenter.toFixed(1)}%`);
+        console.log(`   Perfect Zone: ${perfectStart.toFixed(1)}% - ${perfectEnd.toFixed(1)}%`);
+        console.log(`   Good Zone: ${goodStart.toFixed(1)}% - ${goodEnd.toFixed(1)}%`);
+        console.log(`   RESULT: ${zone} -> Score ${score}`);
         return score;
     }
 
@@ -260,6 +257,7 @@ class QTERound {
     complete(score, message) {
         this.isActive = false;
         
+        // Clear ALL timers and animations
         if (this.animationFrame) {
             cancelAnimationFrame(this.animationFrame);
             this.animationFrame = null;
@@ -270,15 +268,17 @@ class QTERound {
             this.timerFrame = null;
         }
         
+        if (this.qteTimeout) {
+            clearTimeout(this.qteTimeout);
+            this.qteTimeout = null;
+        }
+        
         // Flash the result
         this.flashResult(score);
         
-        // Add sparkle animation for perfect hits
-        if (score === 10) {
-            this.showSparkleAnimation();
-        }
-        // Add fail animation for missed/red zone hits
-        else if (score === 0 || score < 0) {
+        // Only show fail animation for missed/red zone hits
+        // Sparkle effects are handled by GameManager now
+        if (score === 0 || score < 0) {
             this.showFailAnimation();
         }
         
@@ -303,60 +303,7 @@ class QTERound {
         this.marker.style.background = color;
     }
 
-    showSparkleAnimation() {
-        // Find the pancake element to add sparkles above it
-        const pancakeElement = document.getElementById('game-pancake');
-        if (!pancakeElement) return;
 
-        // Get pancake position
-        const pancakeRect = pancakeElement.getBoundingClientRect();
-        const gameContainer = document.getElementById('game-container');
-        const containerRect = gameContainer.getBoundingClientRect();
-
-        // Create sparkle container
-        const sparkleContainer = document.createElement('div');
-        sparkleContainer.style.cssText = `
-            position: absolute;
-            left: ${pancakeRect.left - containerRect.left + pancakeRect.width / 2}px;
-            top: ${pancakeRect.top - containerRect.top + pancakeRect.height / 2}px;
-            width: 0;
-            height: 0;
-            pointer-events: none;
-            z-index: 1000;
-        `;
-
-        // Create multiple sparkles
-        for (let i = 0; i < 12; i++) {
-            const sparkle = document.createElement('div');
-            const angle = (i * 30) * (Math.PI / 180); // 30 degrees apart
-            const distance = 60 + Math.random() * 40; // Random distance
-            const size = 4 + Math.random() * 8; // Random size
-
-            sparkle.style.cssText = `
-                position: absolute;
-                width: ${size}px;
-                height: ${size}px;
-                background: linear-gradient(45deg, #FFD700, #FFF, #FFD700);
-                border-radius: 50%;
-                animation: sparkle 1s ease-out forwards;
-                transform: translate(-50%, -50%);
-                box-shadow: 0 0 10px #FFD700;
-            `;
-
-            // Set the sparkle's final position
-            sparkle.style.setProperty('--end-x', `${Math.cos(angle) * distance}px`);
-            sparkle.style.setProperty('--end-y', `${Math.sin(angle) * distance}px`);
-
-            sparkleContainer.appendChild(sparkle);
-        }
-
-        gameContainer.appendChild(sparkleContainer);
-
-        // Remove sparkles after animation
-        setTimeout(() => {
-            sparkleContainer.remove();
-        }, 1000);
-    }
 
     showFailAnimation() {
         // Find the pancake element to add fail effects around it
@@ -462,7 +409,7 @@ class QTERound {
         this.marker.style.boxShadow = '0 0 10px var(--pastel-purple)';
         this.qteTimerFill.style.transform = 'scaleX(1)';
         
-        // Stop any running animations or timers
+        // Stop ALL running animations and timers
         if (this.animationFrame) {
             cancelAnimationFrame(this.animationFrame);
             this.animationFrame = null;
@@ -470,6 +417,10 @@ class QTERound {
         if (this.timerFrame) {
             cancelAnimationFrame(this.timerFrame);
             this.timerFrame = null;
+        }
+        if (this.qteTimeout) {
+            clearTimeout(this.qteTimeout);
+            this.qteTimeout = null;
         }
         if (this.qteTimer) {
             this.qteTimer.stop();
@@ -510,9 +461,14 @@ class QTERound {
             this.keyHandler = null;
         }
         
+        // Clear ALL timers and animations
         if (this.qteTimer) {
             this.qteTimer.stop();
             this.qteTimer = null;
+        }
+        if (this.qteTimeout) {
+            clearTimeout(this.qteTimeout);
+            this.qteTimeout = null;
         }
         if (this.animationFrame) {
             cancelAnimationFrame(this.animationFrame);

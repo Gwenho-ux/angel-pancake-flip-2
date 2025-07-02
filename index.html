@@ -45,7 +45,7 @@
 
             <div class="game-area">
                 <div class="angel-display">
-                    <div class="angel-placeholder">
+                    <div class="pan-container">
                         <img src="assets/pan.png" alt="Pan" class="pan-image">
                         <div class="pancake raw" id="game-pancake"></div>
                     </div>
@@ -88,15 +88,16 @@
             <button id="back-from-leaderboard-btn" class="neon-btn">BACK</button>
         </div>
 
-        <!-- Leaderboard Popup -->
-        <div id="leaderboard-popup" class="popup-overlay">
-            <div class="popup-content">
-                <div class="popup-header">
-                    <h2 class="popup-title">LEADERBOARD</h2>
-                    <button id="close-leaderboard-popup" class="close-popup-btn">✕</button>
-                </div>
-                <div id="popup-leaderboard-list" class="popup-leaderboard-list"></div>
+    </div>
+
+    <!-- Leaderboard Popup - Outside container for full screen overlay -->
+    <div id="leaderboard-popup" class="popup-overlay">
+        <div class="popup-content">
+            <div class="popup-header">
+                <h2 class="popup-title">LEADERBOARD</h2>
+                <button id="close-leaderboard-popup" class="close-popup-btn">✕</button>
             </div>
+            <div id="popup-leaderboard-list" class="popup-leaderboard-list"></div>
         </div>
     </div>
 

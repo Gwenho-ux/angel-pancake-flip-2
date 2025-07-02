@@ -89,12 +89,10 @@ class Leaderboard {
             else if (index === 2) entryElement.style.borderColor = '#CD7F32';
             
             entryElement.innerHTML = `
-                <div class="leaderboard-rank">#${index + 1}</div>
+                <div class="leaderboard-rank">${index + 1}</div>
                 <div class="leaderboard-name">${this.escapeHtml(entry.name)}</div>
-                <div class="leaderboard-info">
-                    <div class="leaderboard-score">${entry.score}</div>
-                    <div class="leaderboard-pancakes">🥞 ${entry.totalPancakes || 0}</div>
-                </div>
+                <div class="leaderboard-pancakes">🥞 ${entry.totalPancakes || 0}</div>
+                <div class="leaderboard-score">🏆 ${entry.score}</div>
             `;
             
             // Add entrance animation
