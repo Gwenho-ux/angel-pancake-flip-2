@@ -12,6 +12,10 @@ class Button {
     init() {
         this.element.addEventListener('click', (e) => {
             if (this.isEnabled && this.onClick) {
+                // Play click sound if audioManager is available
+                if (window.audioManager) {
+                    window.audioManager.playClickSound();
+                }
                 this.onClick(e);
                 this.playClickAnimation();
             }

@@ -12,15 +12,22 @@ class Leaderboard {
         // Load from localStorage or return default scores
         const saved = localStorage.getItem('angelsPancakeFlipScores');
         if (saved) {
-            return JSON.parse(saved);
+            const scores = JSON.parse(saved);
+            // Migrate old scores without pancake count
+            return scores.map(entry => ({
+                name: entry.name,
+                score: entry.score,
+                totalPancakes: entry.totalPancakes || 0,
+                timestamp: entry.timestamp || new Date().toISOString()
+            }));
         }
         
         // Default demo scores
         return [
-            { name: 'Angel', score: 60 },
-            { name: 'Demo Player', score: 45 },
-            { name: 'Pancake Pro', score: 38 },
-            { name: 'Newbie', score: 15 }
+            { name: 'Angel', score: 60, totalPancakes: 3, timestamp: new Date().toISOString() },
+            { name: 'Demo Player', score: 45, totalPancakes: 2, timestamp: new Date().toISOString() },
+            { name: 'Pancake Pro', score: 38, totalPancakes: 2, timestamp: new Date().toISOString() },
+            { name: 'Newbie', score: 15, totalPancakes: 1, timestamp: new Date().toISOString() }
         ];
     }
 
@@ -28,9 +35,22 @@ class Leaderboard {
         localStorage.setItem('angelsPancakeFlipScores', JSON.stringify(this.scores));
     }
 
-    addScore(name, score) {
-        this.scores.push({ name, score });
-        this.scores.sort((a, b) => b.score - a.score);
+    addScore(name, score, totalPancakes = 0) {
+        this.scores.push({ 
+            name, 
+            score, 
+            totalPancakes,
+            timestamp: new Date().toISOString()
+        });
+        
+        // Sort by score first, then by pancakes as tiebreaker
+        this.scores.sort((a, b) => {
+            if (b.score !== a.score) {
+                return b.score - a.score;
+            }
+            // If scores are equal, sort by pancakes
+            return b.totalPancakes - a.totalPancakes;
+        });
         
         // Keep only top 10 scores
         this.scores = this.scores.slice(0, 10);
@@ -71,7 +91,10 @@ class Leaderboard {
             entryElement.innerHTML = `
                 <div class="leaderboard-rank">#${index + 1}</div>
                 <div class="leaderboard-name">${this.escapeHtml(entry.name)}</div>
-                <div class="leaderboard-score">${entry.score}</div>
+                <div class="leaderboard-info">
+                    <div class="leaderboard-score">${entry.score}</div>
+                    <div class="leaderboard-pancakes">🥞 ${entry.totalPancakes || 0}</div>
+                </div>
             `;
             
             // Add entrance animation

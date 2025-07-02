@@ -3,6 +3,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Create game manager
     const gameManager = new GameManager();
     
+    // Make audioManager globally available for buttons and other components
+    window.audioManager = gameManager.audioManager;
+    
     // Create UI screens
     window.startScreen = new StartScreen(gameManager);
     window.leaderboard = new Leaderboard();
@@ -67,20 +70,53 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Add mute button functionality
-    const muteButton = document.getElementById('mute-btn');
-    if (muteButton) {
-        muteButton.addEventListener('click', () => {
-            const isMuted = gameManager.audioManager.toggleMute();
-            muteButton.textContent = isMuted ? '🔇' : '🔊';
-            muteButton.classList.toggle('muted', isMuted);
-            
-            // Re-initialize audio if needed
-            if (!isMuted && !audioInitialized) {
-                initializeAudio();
-            }
-        });
-    }
+    // Add music button functionality for both global and game-specific buttons
+    const musicButtons = [document.getElementById('music-btn'), document.getElementById('music-btn-global')];
+    musicButtons.forEach(musicButton => {
+        if (musicButton) {
+            musicButton.addEventListener('click', () => {
+                const isMusicMuted = gameManager.audioManager.toggleMusic();
+                const newText = isMusicMuted ? '🎶' : '🎵';
+                
+                // Update both buttons
+                musicButtons.forEach(btn => {
+                    if (btn) {
+                        btn.textContent = newText;
+                        btn.classList.toggle('muted', isMusicMuted);
+                    }
+                });
+                
+                // Re-initialize audio if needed
+                if (!isMusicMuted && !audioInitialized) {
+                    initializeAudio();
+                }
+            });
+        }
+    });
+    
+    // Add mute button functionality for both global and game-specific buttons
+    const muteButtons = [document.getElementById('mute-btn'), document.getElementById('mute-btn-global')];
+    muteButtons.forEach(muteButton => {
+        if (muteButton) {
+            muteButton.addEventListener('click', () => {
+                const isMuted = gameManager.audioManager.toggleMute();
+                const newText = isMuted ? '🔇' : '🔊';
+                
+                // Update both buttons
+                muteButtons.forEach(btn => {
+                    if (btn) {
+                        btn.textContent = newText;
+                        btn.classList.toggle('muted', isMuted);
+                    }
+                });
+                
+                // Re-initialize audio if needed
+                if (!isMuted && !audioInitialized) {
+                    initializeAudio();
+                }
+            });
+        }
+    });
     
     // Add service worker for offline play (optional)
     if ('serviceWorker' in navigator) {

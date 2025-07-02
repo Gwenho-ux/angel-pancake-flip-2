@@ -7,6 +7,7 @@ class AudioManager {
         this.musicVolume = 0.5;
         this.sfxVolume = 0.8;
         this.isMuted = false;
+        this.isMusicMuted = false;
         
         this.initializeSounds();
     }
@@ -18,7 +19,12 @@ class AudioManager {
             flip: 'assets/music/flip.mp3',
             cook: 'assets/music/cook.mp3',
             bling: 'assets/music/bling.mp3',
-            fail: 'assets/music/fail.mp3'
+            fail: 'assets/music/fail.mp3',
+            pour: 'assets/music/pour.mp3',
+            click: 'assets/music/click.mp3',
+            perfect: 'assets/music/perfect.mp3',
+            good: 'assets/music/good.mp3',
+            bad: 'assets/music/strained-gibberish-103110.mp3'
         };
 
         // Create audio objects for each sound
@@ -41,7 +47,7 @@ class AudioManager {
 
     // Background music control
     playBackgroundMusic() {
-        if (this.isMuted) return;
+        if (this.isMuted || this.isMusicMuted) return;
         
         this.stopBackgroundMusic(); // Stop any currently playing music
         this.currentBgMusic = this.sounds.background;
@@ -92,6 +98,26 @@ class AudioManager {
 
     playFailSound() {
         this.playSound('fail');
+    }
+
+    playPourSound() {
+        this.playSound('pour');
+    }
+
+    playClickSound() {
+        this.playSound('click');
+    }
+
+    playPerfectResultSound() {
+        this.playSound('perfect');
+    }
+
+    playGoodResultSound() {
+        this.playSound('good');
+    }
+
+    playBadResultSound() {
+        this.playSound('bad');
     }
 
     // Generic sound play method
@@ -174,6 +200,20 @@ class AudioManager {
         Object.values(this.sounds).forEach(sound => {
             sound.muted = false;
         });
+    }
+
+    // Music-only mute controls
+    toggleMusic() {
+        this.isMusicMuted = !this.isMusicMuted;
+        
+        if (this.isMusicMuted) {
+            this.stopBackgroundMusic();
+        } else if (!this.isMuted) {
+            // Only restart music if not globally muted
+            this.playBackgroundMusic();
+        }
+        
+        return this.isMusicMuted;
     }
 
     // Cleanup method

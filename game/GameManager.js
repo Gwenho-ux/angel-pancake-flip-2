@@ -15,10 +15,17 @@ class GameManager {
         // Pancake state management
         this.pancakeElement = document.getElementById('game-pancake');
         this.panElement = document.querySelector('.angel-placeholder');
-        this.currentPancakeState = 'raw';
-        this.pancakeStates = ['raw', 'cooking', 'perfect', 'burnt'];
+        this.currentPancakeState = 'empty';
+        this.pancakeStates = ['empty', 'raw', 'cooking', 'perfect', 'burnt'];
         this.pancakeFlipCount = 0;
         this.missedFlips = 0; // Track red zone/missed flips
+        this.temporaryBurntState = false; // Track if showing temporary burnt state
+        
+        // New pancake tracking
+        this.totalPancakes = 0; // Total successful pancakes
+        this.currentPancakeScores = []; // Array to store QTE scores for current pancake
+        this.currentPancakePhase = 0; // 0: pour, 1: first flip, 2: final flip
+        this.pancakeCounterElement = null; // Will be created in init()
         
         this.qteTimeouts = [];
         this.isGameActive = false;
@@ -34,8 +41,50 @@ class GameManager {
             this.handleQTEComplete(score, message);
         });
         
+        // Create pancake counter UI
+        this.createPancakeCounter();
+        
         // Ensure QTE starts disabled
         this.qteRound.disableQTE();
+    }
+
+    createPancakeCounter() {
+        // Create pancake counter display element
+        const gameHeader = document.querySelector('.game-header');
+        const scoreDisplay = document.querySelector('.score-display');
+        const timerDisplay = document.querySelector('.timer-display');
+        
+        // Create a container for all three displays in one line
+        const statsContainer = document.createElement('div');
+        statsContainer.className = 'stats-container';
+        
+        // Move score display into stats container and add emoji
+        scoreDisplay.parentNode.insertBefore(statsContainer, scoreDisplay);
+        const scoreLabel = scoreDisplay.querySelector('.label');
+        scoreLabel.innerHTML = 'SCORE';
+        const scoreValue = scoreDisplay.querySelector('#current-score');
+        scoreValue.innerHTML = '🏆 0';
+        statsContainer.appendChild(scoreDisplay);
+        
+        // Create pancake counter with pancake emoji
+        const pancakeCounter = document.createElement('div');
+        pancakeCounter.className = 'pancake-counter';
+        pancakeCounter.innerHTML = `
+            <span class="label">PANCAKES</span>
+            <span id="pancake-count">🥞 0</span>
+        `;
+        
+        // Add pancake counter to stats container
+        statsContainer.appendChild(pancakeCounter);
+        
+        // Move timer display to stats container and add clock emoji
+        const timerLabel = timerDisplay.querySelector('.label');
+        timerLabel.innerHTML = 'TIME';
+        const timerValue = timerDisplay.querySelector('#game-timer');
+        timerValue.innerHTML = '⏰ 60';
+        statsContainer.appendChild(timerDisplay);
+        
+        this.pancakeCounterElement = document.getElementById('pancake-count');
     }
 
     startGame(playerName) {
@@ -45,10 +94,15 @@ class GameManager {
         this.isGameActive = true;
         
         // Reset pancake state
-        this.currentPancakeState = 'raw';
+        this.currentPancakeState = 'empty';
         this.pancakeFlipCount = 0;
         this.missedFlips = 0;
+        this.temporaryBurntState = false;
+        this.totalPancakes = 0;
+        this.currentPancakeScores = [];
+        this.currentPancakePhase = 0;
         this.updatePancakeVisual();
+        this.updatePancakeCounter();
         
         this.scoreDisplay.reset();
         
@@ -56,7 +110,7 @@ class GameManager {
         this.audioManager.startCookingSound();
         
         // Start 60-second game timer - optimized for performance
-        this.gameTimerElement.textContent = '60';
+        this.gameTimerElement.textContent = '⏰ 60';
         const gameStartTime = Date.now();
         const gameDuration = 60000; // 60 seconds
         let lastDisplayedTime = 60;
@@ -71,7 +125,7 @@ class GameManager {
             // Only update DOM if the displayed value changes
             if (displayTime !== lastDisplayedTime) {
                 lastDisplayedTime = displayTime;
-                this.gameTimerElement.textContent = displayTime;
+                this.gameTimerElement.textContent = `⏰ ${displayTime}`;
             }
             
             if (remaining > 0) {
@@ -92,27 +146,31 @@ class GameManager {
         this.qteTimeouts.forEach(timeout => clearTimeout(timeout));
         this.qteTimeouts = [];
         
-        // Create truly random QTE intervals with guaranteed 2-second breaks
+        // Start first QTE immediately
+        setTimeout(() => {
+            if (this.isGameActive) {
+                this.startQTE();
+            }
+        }, 100); // Small delay to ensure game is ready
+        
+        // Create continuous QTE intervals with NO breaks
         const qteIntervals = [];
-        const minBreakTime = 2000; // 2 seconds minimum break
         const qteTime = 3000; // 3 seconds for QTE
-        const dialogueTime = 1000; // 1 second for dialogue
-        const totalQTECycle = qteTime + dialogueTime; // Total time for one QTE cycle
+        const totalQTECycle = qteTime; // Just QTE time, no dialogue delays
         
-        // Generate random intervals ensuring 2-second breaks
-        let currentTime = Math.random() * 3000 + 2000; // Start between 2-5 seconds
+        // Generate intervals with NO breaks for completely continuous gameplay
+        let currentTime = totalQTECycle; // Start immediately after first QTE
         
-        for (let i = 0; i < this.maxQTEs; i++) {
+        for (let i = 1; i < this.maxQTEs; i++) { // Start from 1 since first is immediate
             if (currentTime + totalQTECycle < 58000) { // Ensure QTE can complete within 60s
                 qteIntervals.push(currentTime);
                 
-                // Next QTE: random interval between 6-11 seconds from now
-                // (3s QTE + 1s dialogue + 2-6s random break)
-                currentTime += totalQTECycle + minBreakTime + Math.random() * 4000;
+                // Next QTE: NO break - start immediately after previous cycle
+                currentTime += totalQTECycle;
             }
         }
         
-        // Schedule each QTE at its random interval
+        // Schedule remaining QTEs at their intervals
         qteIntervals.forEach((time, index) => {
             const timeout = setTimeout(() => {
                 if (this.isGameActive) {
@@ -123,45 +181,81 @@ class GameManager {
         });
     }
 
+    updatePancakeCounter() {
+        if (this.pancakeCounterElement) {
+            this.pancakeCounterElement.textContent = `🥞 ${this.totalPancakes}`;
+        }
+    }
+
     startQTE() {
         if (!this.isGameActive || this.qteCount >= this.maxQTEs) return;
         
         this.qteCount++;
-        this.showDialogue("Flip the pancake!");
         
+        // Different dialogue based on pancake phase
+        let dialogue = "";
+        if (this.currentPancakePhase === 0) {
+            dialogue = "Pour the batter!";
+            // Ensure pan is empty when starting pour phase
+            if (this.currentPancakeState !== 'empty') {
+                this.currentPancakeState = 'empty';
+                this.updatePancakeVisual();
+            }
+        } else if (this.currentPancakePhase === 1) {
+            dialogue = "First flip!";
+        } else {
+            dialogue = "Final flip!";
+        }
+        
+        // Show dialogue and start QTE immediately
+        this.showDialogue(dialogue);
+        this.qteRound.start();
+        
+        // Hide dialogue after QTE starts
         setTimeout(() => {
             this.hideDialogue();
-            this.qteRound.start();
-        }, 1000); // Increased dialogue time for better pacing
+        }, 500);
     }
 
     handleQTEComplete(score, message) {
         this.scoreDisplay.addScore(score);
         this.score = this.scoreDisplay.targetScore;
         
-        // Play appropriate sound effects based on score
-        if (score > 0) {
-            this.audioManager.playFlipSound(); // Play flip sound for any successful flip
+        // Store the QTE score for current pancake
+        this.currentPancakeScores.push(score);
+        
+        // Play appropriate sound effects based on score and phase
+        if (score > 0 && this.currentPancakePhase > 0) {
+            this.audioManager.playFlipSound(); // Play flip sound for actual flips
             this.flipPancake();
             // Increment flip count only for successful flips
             this.pancakeFlipCount++;
             
-            // Play success sound and create sparkle effects AFTER pancake flip animation (600ms)
-            if (score >= 3) {
+            // Update pancake state immediately after successful flip
+            this.updatePancakeState();
+            
+            // Play success sound and create sparkle effects AFTER pancake flip animation (300ms)
+            if (score > 0) {
                 setTimeout(() => {
-                    this.audioManager.playSuccessSound();
-                    // Perfect flip (score 5) gets fancy sparkles, good flip gets regular sparkles
-                    if (score === 5) {
+                    // Perfect flip (score 10) gets fancy sparkles and bling sound
+                    if (score === 10) {
+                        this.audioManager.playSuccessSound();
                         this.createFancySparkleEffect();
                     } else {
+                        // All other successful flips get regular sparkles and happy sound
+                        this.audioManager.playSuccessSound();
                         this.createSparkleEffect();
                     }
-                }, 650); // After flip animation completes (600ms) + small buffer
-            } else if (score > 0) {
-                // Regular flip (score 1-2) gets basic sparkles without sound AFTER flip
-                setTimeout(() => {
-                    this.createSparkleEffect();
-                }, 650); // After flip animation completes
+                }, 500); // Effects delay: 500ms after flip
+            }
+        } else if (this.currentPancakePhase === 0) {
+            // Pour phase - only show pancake if successful
+            if (score > 0) {
+                this.currentPancakeState = 'raw';
+                this.updatePancakeVisual();
+                this.audioManager.playPourSound();
+                this.audioManager.playSuccessSound();
+                this.createSparkleEffect();
             }
         } else {
             // Play fail sound and effects AFTER attempted flip animation
@@ -179,18 +273,35 @@ class GameManager {
             console.log(`Good flip! Score: ${score}, Total missed flips: ${this.missedFlips}`);
         }
         
+        // Check if pancake is complete (all 3 QTEs done)
+        if (this.currentPancakeScores.length === 3) {
+            this.completePancake();
+        } else {
+            // Only advance phase if current phase was successful or if we're past pour phase
+            if (this.currentPancakePhase === 0) {
+                // Pour phase - only advance if successful
+                if (score > 0) {
+                    this.currentPancakePhase++;
+                }
+                // If failed, stay at pour phase (don't add failed score)
+                else {
+                    this.currentPancakeScores.pop(); // Remove the failed pour score
+                }
+            } else {
+                // Flip phases - always advance
+                this.currentPancakePhase++;
+            }
+        }
+        
         // Update pancake state based on flip progression
         this.updatePancakeState();
         
-        this.showDialogue(message);
-        setTimeout(() => {
-            this.hideDialogue();
-            this.updatePancakeVisual();
-        }, 2000); // Extended delay to allow effects to play after flip
+        // No dialogue delays - just update visual immediately
+        this.updatePancakeVisual();
         
         // Check if game should end
         if (this.qteCount >= this.maxQTEs) {
-            setTimeout(() => this.endGame(), 2000);
+            setTimeout(() => this.endGame(), 1000);
         }
     }
     
@@ -207,33 +318,282 @@ class GameManager {
         }, 600);
     }
     
+    completePancake() {
+        // Calculate total score for this pancake
+        const totalScore = this.currentPancakeScores.reduce((sum, score) => sum + score, 0);
+        
+        // Check if both flips were missed (pancakeFlipCount = 0 means no successful flips)
+        const bothFlipsMissed = this.pancakeFlipCount === 0;
+        
+        // Determine pancake grade
+        let grade = '';
+        let isCounted = false;
+        
+        if (bothFlipsMissed) {
+            // Both flips missed - burnt pancake, not counted
+            grade = 'Burnt!';
+            isCounted = false;
+            // Show burnt pancake immediately
+            this.currentPancakeState = 'burnt';
+            this.updatePancakeVisual();
+        } else if (totalScore >= 25) {
+            grade = 'Perfect!';
+            isCounted = true;
+        } else if (totalScore >= 18) {
+            grade = 'Good!';
+            isCounted = true;
+        } else if (totalScore >= 10) {
+            grade = 'Mid!';
+            isCounted = true;
+        } else if (totalScore >= 1) {
+            grade = 'Burnt!';
+            isCounted = false;
+        } else {
+            grade = 'Trash!';
+            isCounted = false;
+        }
+        
+        // Show floating text with grade
+        this.showPancakeGrade(grade, isCounted);
+        
+        // Wait 0.5 second to show the final pancake state
+        setTimeout(() => {
+            if (bothFlipsMissed) {
+                // Both flips missed - animate pancake flying to the right and fading out
+                this.animateBurntPancakeAway(() => {
+                    // Reset counters after burnt pancake flies away
+                    this.pancakeFlipCount = 0;
+                    this.missedFlips = 0;
+                    this.temporaryBurntState = false;
+                    
+                    // No need to show hint - next QTE will handle it
+                });
+            } else if (isCounted) {
+                // Successful pancake - animate flying to counter
+                this.animatePancakeToCounter(() => {
+                    this.totalPancakes++;
+                    this.updatePancakeCounter();
+                    
+                    // Reset counters (pan already empty from animation)
+                    this.pancakeFlipCount = 0;
+                    this.missedFlips = 0;
+                    this.temporaryBurntState = false;
+                    
+                    // No need to show hint - next QTE will handle it
+                });
+            } else {
+                // For other failed pancakes, just reset after showing
+                this.currentPancakeState = 'empty';
+                this.updatePancakeVisual();
+                this.pancakeFlipCount = 0;
+                this.missedFlips = 0;
+                this.temporaryBurntState = false;
+                
+                // No need to show hint - next QTE will handle it
+            }
+        }, 500); // Wait 0.5 second before flying/resetting
+        
+        // Reset for next pancake
+        this.currentPancakeScores = [];
+        this.currentPancakePhase = 0;
+        
+        console.log(`Pancake complete! Total score: ${totalScore}, Grade: ${grade}, Counted: ${isCounted}, Both flips missed: ${bothFlipsMissed}`);
+    }
+
+    showPancakeGrade(grade, isSuccess) {
+        const floatingText = document.createElement('div');
+        floatingText.className = 'pancake-grade-text';
+        floatingText.textContent = grade;
+        
+        // Style based on success/failure
+        if (isSuccess) {
+            if (grade === 'Perfect!') {
+                floatingText.style.color = '#FFD700';
+                floatingText.style.textShadow = '0 0 10px #FFD700';
+            } else if (grade === 'Good!') {
+                floatingText.style.color = '#00D4FF';
+                floatingText.style.textShadow = '0 0 10px #00D4FF';
+            } else {
+                floatingText.style.color = '#B026FF';
+                floatingText.style.textShadow = '0 0 10px #B026FF';
+            }
+        } else {
+            floatingText.style.color = '#FF0099';
+            floatingText.style.textShadow = '0 0 10px #FF0099';
+            
+            // Add smoke effect for burnt/trash
+            if (grade === 'Burnt!' || grade === 'Trash!') {
+                this.createBurntSmoke();
+            }
+        }
+        
+        // Position above pan
+        floatingText.style.cssText += `
+            position: absolute;
+            left: 50%;
+            top: -30px;
+            transform: translateX(-50%);
+            font-size: 2em;
+            font-weight: bold;
+            z-index: 20;
+            animation: floatUp 2s ease-out forwards;
+        `;
+        
+        this.panElement.appendChild(floatingText);
+        
+        // Remove after animation
+        setTimeout(() => {
+            if (floatingText.parentNode) {
+                floatingText.parentNode.removeChild(floatingText);
+            }
+        }, 2000);
+    }
+
+    animatePancakeToCounter(callback) {
+        // Clone the pancake for animation
+        const flyingPancake = this.pancakeElement.cloneNode(true);
+        flyingPancake.id = '';
+        flyingPancake.classList.add('flying-pancake');
+        
+        // Get positions
+        const pancakeRect = this.pancakeElement.getBoundingClientRect();
+        const counterRect = this.pancakeCounterElement.getBoundingClientRect();
+        const gameRect = document.getElementById('game-container').getBoundingClientRect();
+        
+        // Set initial position
+        flyingPancake.style.cssText = `
+            position: absolute;
+            left: ${pancakeRect.left - gameRect.left}px;
+            top: ${pancakeRect.top - gameRect.top}px;
+            width: ${pancakeRect.width}px;
+            height: ${pancakeRect.height}px;
+            z-index: 100;
+            transition: all 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
+        `;
+        
+        document.getElementById('game-container').appendChild(flyingPancake);
+        
+        // Hide original pancake immediately when flying starts
+        this.currentPancakeState = 'empty';
+        this.updatePancakeVisual();
+        
+        // Trigger animation after a frame
+        requestAnimationFrame(() => {
+            flyingPancake.style.left = `${counterRect.left - gameRect.left + counterRect.width / 2 - 25}px`;
+            flyingPancake.style.top = `${counterRect.top - gameRect.top + counterRect.height / 2 - 25}px`;
+            flyingPancake.style.width = '50px';
+            flyingPancake.style.height = '50px';
+            flyingPancake.style.transform = 'rotate(360deg)';
+        });
+        
+        // Clean up and callback
+        setTimeout(() => {
+            flyingPancake.remove();
+            
+            // Add pulse effect to counter
+            this.pancakeCounterElement.parentElement.style.animation = 'pulse 0.5s ease-out';
+            setTimeout(() => {
+                this.pancakeCounterElement.parentElement.style.animation = '';
+            }, 500);
+            
+            if (callback) callback();
+        }, 800);
+    }
+
+    animateBurntPancakeAway(callback) {
+        // Clone the pancake for animation
+        const flyingPancake = this.pancakeElement.cloneNode(true);
+        flyingPancake.id = '';
+        flyingPancake.classList.add('flying-burnt-pancake');
+        
+        // Get positions
+        const pancakeRect = this.pancakeElement.getBoundingClientRect();
+        const gameRect = document.getElementById('game-container').getBoundingClientRect();
+        
+        // Set initial position
+        flyingPancake.style.cssText = `
+            position: absolute;
+            left: ${pancakeRect.left - gameRect.left}px;
+            top: ${pancakeRect.top - gameRect.top}px;
+            width: ${pancakeRect.width}px;
+            height: ${pancakeRect.height}px;
+            z-index: 100;
+            transition: all 0.8s ease-out;
+        `;
+        
+        document.getElementById('game-container').appendChild(flyingPancake);
+        
+        // Hide original pancake immediately when flying starts
+        this.currentPancakeState = 'empty';
+        this.updatePancakeVisual();
+        
+        // Trigger animation after a frame - fly to the right and fade out
+        requestAnimationFrame(() => {
+            flyingPancake.style.left = `${gameRect.width + 100}px`; // Fly off screen to the right
+            flyingPancake.style.top = `${pancakeRect.top - gameRect.top + Math.random() * 50 - 25}px`; // Slight vertical variation
+            flyingPancake.style.opacity = '0'; // Fade out
+            flyingPancake.style.transform = 'rotate(180deg) scale(0.8)'; // Rotate and shrink slightly
+        });
+        
+        // Clean up and callback
+        setTimeout(() => {
+            flyingPancake.remove();
+            
+            if (callback) callback();
+        }, 800); // Same duration as the transition
+    }
+
+    createBurntSmoke() {
+        // Create smoke effect for burnt pancakes
+        for (let i = 0; i < 3; i++) {
+            const smoke = document.createElement('div');
+            smoke.textContent = '💨';
+            smoke.style.cssText = `
+                position: absolute;
+                left: ${40 + Math.random() * 20}%;
+                top: 50%;
+                font-size: 30px;
+                opacity: 0.7;
+                z-index: 15;
+                animation: smokeRise 2s ease-out forwards;
+                animation-delay: ${i * 0.2}s;
+            `;
+            
+            this.panElement.appendChild(smoke);
+            
+            setTimeout(() => {
+                if (smoke.parentNode) {
+                    smoke.parentNode.removeChild(smoke);
+                }
+            }, 2500);
+        }
+    }
+
     updatePancakeState() {
-        // Pancake progression based on flip count and performance
-        // Rules:
-        // - If user gets 3+ red zone hits (score 0): burnt pancake
-        // - Otherwise, progression based on flip count:
-        //   * Flips 1-2: raw pancake (pancake_1.png)
-        //   * Flips 3-4: cooking pancake (pancake_2.png) 
-        //   * Flips 5-6: perfect pancake (pancake_3.png)
+        // Don't update if pancake is empty (hasn't been poured yet)
+        if (this.currentPancakeState === 'empty') {
+            return;
+        }
+        
+        // Don't update if temporarily showing burnt state
+        if (this.temporaryBurntState) {
+            return;
+        }
+        
+        // New pancake progression rules:
+        // - If user gets any successful flip: perfect pancake
+        // - Only burns if both flips are missed (will be handled in completePancake)
         
         console.log(`Flip ${this.pancakeFlipCount}: Missed flips: ${this.missedFlips}`);
         
-        if (this.missedFlips >= 3) {
-            // Too many red zone hits - burnt pancake
-            this.currentPancakeState = 'burnt';
-            console.log('Pancake burnt due to too many red zone hits');
+        // If we have any successful flips, show perfect pancake
+        if (this.pancakeFlipCount > 0) {
+            this.currentPancakeState = 'perfect';
+            console.log('Pancake state: perfect (after any successful flip)');
         } else {
-            // Normal progression based on flip count
-            if (this.pancakeFlipCount <= 2) {
-                this.currentPancakeState = 'raw';
-                console.log('Pancake state: raw (early flips)');
-            } else if (this.pancakeFlipCount <= 4) {
-                this.currentPancakeState = 'cooking';
-                console.log('Pancake state: cooking (middle flips)');
-            } else {
-                this.currentPancakeState = 'perfect';
-                console.log('Pancake state: perfect (later flips)');
-            }
+            // Stay raw until first successful flip
+            this.currentPancakeState = 'raw';
+            console.log('Pancake state: raw (no successful flips yet)');
         }
     }
 
@@ -301,12 +661,12 @@ class GameManager {
         const pancakeRect = this.pancakeElement.getBoundingClientRect();
         const panRect = this.panElement.getBoundingClientRect();
         
-        // Create multiple waves of sparkles with different effects
-        const sparkleTypes = ['✨', '⭐', '💫', '🌟', '✨'];
-        const colors = ['gold', 'yellow', 'white', 'lightblue', 'pink'];
+        // Create more sparkles than regular effect but keep it simple
+        const sparkleTypes = ['✨', '⭐', '💫', '🌟'];
+        const colors = ['gold', 'yellow', 'white', 'lightblue'];
         
-        // First wave - burst effect
-        for (let i = 0; i < 12; i++) {
+        // Create more sparkle particles than regular effect
+        for (let i = 0; i < 16; i++) {
             const sparkle = document.createElement('div');
             sparkle.className = 'fancy-sparkle-particle';
             sparkle.textContent = sparkleTypes[i % sparkleTypes.length];
@@ -319,11 +679,11 @@ class GameManager {
             sparkle.style.pointerEvents = 'none';
             sparkle.style.zIndex = '10';
             sparkle.style.color = colors[i % colors.length];
-            sparkle.style.textShadow = '0 0 10px currentColor';
+            sparkle.style.textShadow = `0 0 10px currentColor`;
             
-            // Random end positions - larger burst
-            const angle = (i / 12) * 2 * Math.PI + Math.random() * 0.5;
-            const distance = 60 + Math.random() * 50;
+            // Random end positions - slightly larger burst than regular
+            const angle = (i / 16) * 2 * Math.PI + Math.random() * 0.2;
+            const distance = 60 + Math.random() * 40;
             const endX = Math.cos(angle) * distance;
             const endY = Math.sin(angle) * distance;
             
@@ -332,61 +692,39 @@ class GameManager {
             
             this.panElement.appendChild(sparkle);
             
-            // Animate sparkle with fancy effect
-            sparkle.style.animation = 'fancySparkle 1.5s ease-out forwards';
+            // Use the same sparkle animation as regular sparkles
+            sparkle.style.animation = 'sparkle 1.2s ease-out forwards';
             
             // Remove sparkle after animation
             setTimeout(() => {
                 if (sparkle.parentNode) {
                     sparkle.parentNode.removeChild(sparkle);
                 }
-            }, 1500);
+            }, 1200);
         }
         
-        // Second wave - delayed inner sparkles
-        setTimeout(() => {
-            for (let i = 0; i < 6; i++) {
-                const sparkle = document.createElement('div');
-                sparkle.className = 'fancy-sparkle-inner';
-                sparkle.textContent = '🌟';
-                
-                sparkle.style.position = 'absolute';
-                sparkle.style.left = '50%';
-                sparkle.style.top = '50%';
-                sparkle.style.fontSize = '30px';
-                sparkle.style.pointerEvents = 'none';
-                sparkle.style.zIndex = '11';
-                sparkle.style.color = 'gold';
-                sparkle.style.textShadow = '0 0 15px gold';
-                
-                // Smaller circle pattern
-                const angle = (i / 6) * 2 * Math.PI;
-                const distance = 25 + Math.random() * 20;
-                const endX = Math.cos(angle) * distance;
-                const endY = Math.sin(angle) * distance;
-                
-                sparkle.style.setProperty('--end-x', `${endX}px`);
-                sparkle.style.setProperty('--end-y', `${endY}px`);
-                
-                this.panElement.appendChild(sparkle);
-                
-                // Animate with rotation
-                sparkle.style.animation = 'fancySparkleInner 1.2s ease-out forwards';
-                
-                setTimeout(() => {
-                    if (sparkle.parentNode) {
-                        sparkle.parentNode.removeChild(sparkle);
-                    }
-                }, 1200);
-            }
-        }, 200);
+        // Add a simple "PERFECT!" text floating up
+        const perfectText = document.createElement('div');
+        perfectText.textContent = 'PERFECT!';
+        perfectText.style.cssText = `
+            position: absolute;
+            left: 50%;
+            top: -80px;
+            transform: translateX(-50%);
+            font-size: 2.5em;
+            font-weight: bold;
+            color: gold;
+            text-shadow: 0 0 10px gold;
+            z-index: 20;
+            animation: floatUp 1.5s ease-out forwards;
+        `;
+        this.panElement.appendChild(perfectText);
         
-        // Add screen glow effect
-        const gameContainer = document.getElementById('game-container');
-        gameContainer.style.boxShadow = '0 0 30px rgba(255, 215, 0, 0.6)';
         setTimeout(() => {
-            gameContainer.style.boxShadow = '';
-        }, 1000);
+            if (perfectText.parentNode) {
+                perfectText.parentNode.removeChild(perfectText);
+            }
+        }, 1500);
     }
 
     createFailEffect() {
@@ -485,10 +823,10 @@ class GameManager {
         // Get roast message based on score
         const roastMessage = this.getRoastMessage(this.score);
         
-        // Transition to result screen with pancake state
+        // Transition to result screen with pancake state and count
         setTimeout(() => {
-            window.resultScreen.show(this.score, roastMessage, this.currentPancakeState);
-            window.leaderboard.addScore(this.currentPlayer, this.score);
+            window.resultScreen.show(this.score, roastMessage, this.currentPancakeState, this.totalPancakes);
+            window.leaderboard.addScore(this.currentPlayer, this.score, this.totalPancakes);
         }, 500);
     }
 
@@ -529,10 +867,15 @@ class GameManager {
         this.audioManager.stopCookingSound();
         
         // Reset pancake state
-        this.currentPancakeState = 'raw';
+        this.currentPancakeState = 'empty';
         this.pancakeFlipCount = 0;
         this.missedFlips = 0;
+        this.temporaryBurntState = false;
+        this.totalPancakes = 0;
+        this.currentPancakeScores = [];
+        this.currentPancakePhase = 0;
         this.updatePancakeVisual();
+        this.updatePancakeCounter();
         
         if (this.gameTimerFrame) {
             cancelAnimationFrame(this.gameTimerFrame);
@@ -552,7 +895,7 @@ class GameManager {
         }
         
         this.scoreDisplay.reset();
-        this.gameTimerElement.textContent = '60';
+        this.gameTimerElement.textContent = '⏰ 60';
         this.hideDialogue();
     }
 } 

@@ -12,7 +12,7 @@ class ScoreDisplay {
         
         if (!animate) {
             this.currentScore = score;
-            this.element.textContent = score;
+            this.element.textContent = `🏆 ${score}`;
             return;
         }
 
@@ -29,12 +29,12 @@ class ScoreDisplay {
             
             if (Math.abs(diff) < 1) {
                 this.currentScore = this.targetScore;
-                this.element.textContent = Math.round(this.currentScore);
+                this.element.textContent = `🏆 ${Math.round(this.currentScore)}`;
                 return;
             }
 
             this.currentScore += diff * 0.1; // Smooth animation
-            this.element.textContent = Math.round(this.currentScore);
+            this.element.textContent = `🏆 ${Math.round(this.currentScore)}`;
             
             this.animationFrame = requestAnimationFrame(animate);
         };
@@ -94,7 +94,7 @@ class ScoreDisplay {
     reset() {
         this.currentScore = 0;
         this.targetScore = 0;
-        this.element.textContent = '0';
+        this.element.textContent = '🏆 0';
         if (this.animationFrame) {
             cancelAnimationFrame(this.animationFrame);
         }

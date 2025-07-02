@@ -8,12 +8,18 @@
 </head>
 <body>
     <div id="game-container">
+        <!-- Global Sound Controls for non-game screens -->
+        <div class="global-sound-controls global-only">
+            <button id="music-btn-global" class="music-button" title="Toggle Music">🎵</button>
+            <button id="mute-btn-global" class="mute-button" title="Toggle All Sounds">🔊</button>
+        </div>
+
         <!-- Start Screen -->
         <div id="start-screen" class="screen active">
-            <h1 class="game-title">Angel's Pancake Flip</h1>
             <div class="angel-placeholder">
                 <div class="pancake perfect"></div>
             </div>
+            <h1 class="game-title">Angel's Pancake Flip</h1>
             <div class="input-container">
                 <input type="text" id="player-name" placeholder="Enter your name" maxlength="20">
                 <button id="start-btn" class="neon-btn">START GAME</button>
@@ -24,20 +30,26 @@
         <!-- Game Screen -->
         <div id="game-screen" class="screen">
             <div class="game-header">
-                <div class="score-display">
-                    <span class="label">SCORE</span>
-                    <span id="current-score">0</span>
+                <div class="stats-container">
+                    <div class="score-display">
+                        <span class="label">SCORE</span>
+                        <span id="current-score">0</span>
+                    </div>
+                    <div class="timer-display">
+                        <span class="label">TIME</span>
+                        <span id="game-timer">60</span>
+                    </div>
                 </div>
-                <div class="timer-display">
-                    <span class="label">TIME</span>
-                    <span id="game-timer">60</span>
+                <div class="game-sound-controls">
+                    <button id="music-btn" class="music-button" title="Toggle Music">🎵</button>
+                    <button id="mute-btn" class="mute-button" title="Toggle All Sounds">🔊</button>
                 </div>
-                <button id="mute-btn" class="mute-button" title="Toggle Sound">🔊</button>
             </div>
 
             <div class="game-area">
                 <div class="angel-display">
                     <div class="angel-placeholder">
+                        <img src="assets/pan.png" alt="Pan" class="pan-image">
                         <div class="pancake raw" id="game-pancake"></div>
                     </div>
                     <div class="dialogue-bubble" id="dialogue-bubble"></div>
@@ -66,17 +78,9 @@
 
         <!-- Result Screen -->
         <div id="result-screen" class="screen">
-            <div class="angel-placeholder">
-                <div class="pancake" id="result-pancake"></div>
-            </div>
-            <div class="final-score">
-                <span class="label">FINAL SCORE</span>
-                <span id="final-score-value">0</span>
-            </div>
             <div class="roast-message" id="roast-message"></div>
             <div class="result-buttons">
-                <button id="play-again-btn" class="neon-btn">PLAY AGAIN</button>
-                <button id="back-to-menu-btn" class="neon-btn secondary">MAIN MENU</button>
+                <button id="back-to-menu-btn" class="neon-btn">MAIN MENU</button>
             </div>
         </div>
 

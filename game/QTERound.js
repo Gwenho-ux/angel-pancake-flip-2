@@ -9,7 +9,7 @@ class QTERound {
         
         this.markerPosition = 0;
         this.markerDirection = 1;
-        this.markerSpeed = 1.5; // Reduced speed for better control
+        this.markerSpeed = 2.8; // Increased speed - faster movement makes timing harder
         this.animationFrame = null;
         this.timerFrame = null;
         this.qteTimer = null;
@@ -22,6 +22,16 @@ class QTERound {
 
     init() {
         this.tapButton.addEventListener('click', () => this.handleTap());
+        
+        // Add keyboard event listener for spacebar
+        this.keyHandler = (event) => {
+            if (event.code === 'Space' && this.isActive && !this.hasBeenTapped) {
+                event.preventDefault(); // Prevent page scrolling
+                this.handleTap();
+            }
+        };
+        
+        document.addEventListener('keydown', this.keyHandler);
         this.disableQTE(); // Start with QTE disabled
     }
 
@@ -119,22 +129,22 @@ class QTERound {
         let score;
         let zone;
         
-        // Perfect hit on yellow area (46-54%) - made bigger
-        if (position >= 46 && position <= 54) {
+        // Perfect hit on yellow area (48-52%) - made smaller and more precise
+        if (position >= 48 && position <= 52) {
             score = 10;
             zone = 'Yellow (Perfect)';
         }
-        // Close inside green (35-46% or 54-65%)
-        else if ((position >= 35 && position < 46) || (position > 54 && position <= 65)) {
+        // Close inside green (40-48% or 52-60%) - reduced range
+        else if ((position >= 40 && position < 48) || (position > 52 && position <= 60)) {
             score = 7;
             zone = 'Green (Good)';
         }
-        // Near edge of green (25-35% or 65-75%)
-        else if ((position >= 25 && position < 35) || (position > 65 && position <= 75)) {
+        // Near edge of green (30-40% or 60-70%) - reduced range
+        else if ((position >= 30 && position < 40) || (position > 60 && position <= 70)) {
             score = 5;
             zone = 'Green (Decent)';
         }
-        // Red zone
+        // Red zone - expanded
         else {
             score = 0;
             zone = 'Red (Miss)';
@@ -146,11 +156,11 @@ class QTERound {
 
     getScoreMessage(score) {
         switch(score) {
-            case 10: return "Perfect flip!";
-            case 7: return "Nice flip!";
-            case 5: return "Decent flip.";
-            case 0: return "You missed! The pancake is burning!";
-            default: return "Too slow! It's getting crispy!";
+            case 10: return "Perfect!";
+            case 7: return "Nice!";
+            case 5: return "Good!";
+            case 0: return "Missed!";
+            default: return "Too slow!";
         }
     }
 
@@ -400,6 +410,13 @@ class QTERound {
     destroy() {
         this.disableQTE();
         this.isActive = false;
+        
+        // Remove keyboard event listener
+        if (this.keyHandler) {
+            document.removeEventListener('keydown', this.keyHandler);
+            this.keyHandler = null;
+        }
+        
         if (this.qteTimer) {
             this.qteTimer.stop();
             this.qteTimer = null;
