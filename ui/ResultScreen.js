@@ -36,15 +36,15 @@ class ResultScreen {
     }
 
     getResultCategory(score, totalPancakes) {
-        // Perfect: High score (80+) AND good pancake count (5+)
-        if (score >= 80 && totalPancakes >= 5) {
+        // Perfect: High score (80+)
+        if (score >= 80) {
             return 'perfect';
         }
-        // Good: Decent score (40+) OR reasonable pancakes (3+)
-        else if (score >= 40 || totalPancakes >= 3) {
+        // Good: Decent score (40+)
+        else if (score >= 40) {
             return 'good';
         }
-        // Bad: Low score and few pancakes
+        // Bad: Low score
         else {
             return 'burnt';
         }
