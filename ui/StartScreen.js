@@ -5,7 +5,7 @@ class StartScreen {
         this.screen = document.getElementById('start-screen');
         this.playerNameInput = document.getElementById('player-name');
         this.startButton = new Button(document.getElementById('start-btn'), () => this.handleStart());
-        this.leaderboardButton = new Button(document.getElementById('leaderboard-btn'), () => this.showLeaderboard());
+        this.startLeaderboardList = document.getElementById('start-leaderboard-list');
         
         this.init();
     }
@@ -37,6 +37,9 @@ class StartScreen {
         // Make container shorter for start screen
         document.getElementById('game-container').classList.add('start-screen-active');
         this.playerNameInput.focus();
+        
+        // Update leaderboard on start screen
+        this.updateStartLeaderboard();
     }
 
     hide() {
@@ -60,8 +63,26 @@ class StartScreen {
         this.gameManager.startGame(playerName);
     }
 
-    showLeaderboard() {
-        window.leaderboard.show();
+    updateStartLeaderboard() {
+        if (!window.leaderboard) return;
+        
+        const scores = window.leaderboard.getTopScores(5); // Get top 5 scores
+        
+        if (scores.length === 0) {
+            this.startLeaderboardList.innerHTML = '<p style="text-align: center; color: #666; font-style: italic;">No scores yet - be the first!</p>';
+            return;
+        }
+        
+        this.startLeaderboardList.innerHTML = scores.map((entry, index) => `
+            <div class="leaderboard-entry">
+                <span class="leaderboard-rank">${index + 1}</span>
+                <span class="leaderboard-name">${entry.name}</span>
+                <div class="leaderboard-info">
+                    <span class="leaderboard-score">🏆 ${entry.totalScore}</span>
+                    <span class="leaderboard-pancakes">🥞 ${entry.totalPancakes}</span>
+                </div>
+            </div>
+        `).join('');
     }
 
     shakeInput() {
