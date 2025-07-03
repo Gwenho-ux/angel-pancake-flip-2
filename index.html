@@ -41,6 +41,10 @@
                         <span id="game-timer">60</span>
                     </div>
                 </div>
+                <div class="game-sound-controls">
+                    <button id="music-btn-game" class="music-button" title="Toggle Music">🎵</button>
+                    <button id="mute-btn-game" class="mute-button" title="Toggle All Sounds">🔊</button>
+                </div>
             </div>
 
             <div class="game-area">
@@ -68,7 +72,7 @@
                             <div class="qte-timer-fill" id="qte-timer-fill"></div>
                         </div>
                     </div>
-                    <button id="tap-btn" class="tap-button">TAP!</button>
+                    <button id="tap-btn" class="tap-button">Flip!</button>
                 </div>
             </div>
         </div>
@@ -90,6 +94,14 @@
 
     </div>
 
+    <!-- Countdown Screen - Outside container for full page display -->
+    <div id="countdown-screen" class="screen">
+        <div class="countdown-container">
+            <div class="countdown-number" id="countdown-number">3</div>
+            <img id="guide-image" class="guide-image" alt="Game Guide">
+        </div>
+    </div>
+
     <!-- Leaderboard Popup - Outside container for full screen overlay -->
     <div id="leaderboard-popup" class="popup-overlay">
         <div class="popup-content">
@@ -108,6 +120,7 @@
     <script src="game/QTERound.js"></script>
     <script src="game/GameManager.js"></script>
     <script src="ui/StartScreen.js"></script>
+    <script src="ui/CountdownScreen.js"></script>
     <script src="ui/Leaderboard.js"></script>
     <script src="ui/ResultScreen.js"></script>
     <script src="main.js"></script>

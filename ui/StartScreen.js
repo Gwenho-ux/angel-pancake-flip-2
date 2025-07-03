@@ -65,12 +65,17 @@ class StartScreen {
             return;
         }
 
-        // Transition to game screen
+        // Transition to countdown screen
         this.hide();
-        document.getElementById('game-screen').classList.add('active');
         
-        // Start the game
-        this.gameManager.startGame(playerName);
+        // Show countdown screen if it exists
+        if (window.countdownScreen) {
+            window.countdownScreen.show(playerName);
+        } else {
+            // Fallback: directly start game if countdown screen doesn't exist
+            document.getElementById('game-screen').classList.add('active');
+            this.gameManager.startGame(playerName);
+        }
     }
 
     showLeaderboardPopup() {

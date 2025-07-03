@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Create UI screens
     window.startScreen = new StartScreen(gameManager);
+    window.countdownScreen = new CountdownScreen(gameManager);
     window.leaderboard = new Leaderboard();
     window.resultScreen = new ResultScreen(gameManager);
     
@@ -74,12 +75,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const getMusicButtons = () => [
         document.getElementById('music-btn'), 
         document.getElementById('music-btn-global'),
-        document.getElementById('music-btn-header')
+        document.getElementById('music-btn-header'),
+        document.getElementById('music-btn-game')
     ].filter(btn => btn);
     
     // Use event delegation for dynamically created buttons
     document.addEventListener('click', (e) => {
-        if (e.target.matches('#music-btn, #music-btn-global, #music-btn-header')) {
+        if (e.target.matches('#music-btn, #music-btn-global, #music-btn-header, #music-btn-game')) {
             const isMusicMuted = gameManager.audioManager.toggleMusic();
             const newText = isMusicMuted ? '🎶' : '🎵';
             
@@ -100,12 +102,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const getMuteButtons = () => [
         document.getElementById('mute-btn'), 
         document.getElementById('mute-btn-global'),
-        document.getElementById('mute-btn-header')
+        document.getElementById('mute-btn-header'),
+        document.getElementById('mute-btn-game')
     ].filter(btn => btn);
     
     // Use event delegation for dynamically created buttons
     document.addEventListener('click', (e) => {
-        if (e.target.matches('#mute-btn, #mute-btn-global, #mute-btn-header')) {
+        if (e.target.matches('#mute-btn, #mute-btn-global, #mute-btn-header, #mute-btn-game')) {
             const isMuted = gameManager.audioManager.toggleMute();
             const newText = isMuted ? '🔇' : '🔊';
             
