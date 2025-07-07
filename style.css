@@ -109,12 +109,7 @@ body {
     }
 }
 
-/* Game-specific sound controls - part of game header layout */
-.game-sound-controls {
-    display: flex;
-    gap: 8px;
-    align-items: flex-start;
-}
+
 
 /* Animations */
 @keyframes pulse {
@@ -193,7 +188,7 @@ body {
 .pan-container {
     width: 375px;
     height: 375px;
-    margin: 20px auto;
+    margin: 0px auto;
     position: relative;
     display: inline-block;
     transition: transform 0.1s ease;
@@ -205,7 +200,7 @@ body {
     width: 375px;
     height: 375px;
     background: url('./assets/pan.png') center/contain no-repeat;
-    margin: 20px auto;
+    margin: 0px auto;
     position: relative;
     display: flex;
     align-items: center;
@@ -579,7 +574,7 @@ body {
     left: 20px;
     right: 20px;
     display: flex;
-    justify-content: space-between; /* Stats on left, sound buttons on right */
+    justify-content: flex-start; /* Stats on left only */
     align-items: flex-start;
     width: calc(100% - 40px); /* Fill container width minus padding */
 }
@@ -627,32 +622,7 @@ body {
     text-shadow: none;
 }
 
-.music-button, .mute-button {
-    background: rgba(232, 165, 176, 0.8);
-    border: 2px solid var(--pastel-pink);
-    border-radius: 8px; /* Reduced from default */
-    padding: 8px 12px; /* Reduced padding */
-    font-size: 1.2em; /* Slightly smaller */
-    cursor: pointer;
-    transition: all 0.3s ease;
-    color: #004970;
-}
 
-.music-button {
-    margin-right: 10px;
-}
-
-.music-button:hover, .mute-button:hover {
-    transform: scale(1.1);
-    background: rgba(232, 165, 176, 0.8);
-    box-shadow: var(--glow-pink);
-}
-
-.music-button.muted, .mute-button.muted {
-    background: rgba(150, 150, 150, 0.6);
-    border-color: #999;
-    color: #666;
-}
 
 .game-area {
     display: flex;
@@ -765,10 +735,11 @@ body {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    width: 3px;
+    width: 10px;
     height: 100%;
     background: #4DA8E5;
     box-shadow: 0 0 8px #4DA8E5;
+    border-radius: 5px;
 }
 
 .marker {
@@ -988,12 +959,13 @@ body {
 /* Countdown Screen */
 #countdown-screen {
     background: linear-gradient(135deg, var(--pastel-purple) 0%, var(--pastel-pink) 50%, var(--pastel-peach) 100%);
-    position: fixed;
+    position: fixed !important;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
     z-index: 1000;
+    padding: 0 !important; /* Override .screen padding */
 }
 
 .countdown-container {
@@ -1510,16 +1482,7 @@ body.start-screen-active {
         gap: 5px;
     }
     
-    /* Adjust sound button size for mobile */
-    .music-button, .mute-button {
-        padding: 8px 10px;
-        font-size: 1em;
-        min-width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+
     
     /* Mobile result screen fixes */
     /* Hide game pancakes on result screen */

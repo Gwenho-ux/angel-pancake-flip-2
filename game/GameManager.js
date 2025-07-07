@@ -200,8 +200,8 @@ class GameManager {
         const qteProgress = Math.min(this.qteCount / 20, 1); // Max difficulty after 20 QTEs
         const combinedProgress = Math.max(progress, qteProgress * 0.5); // Use whichever is higher
         
-        // 1. Green zone gets smaller (70% -> 15%) - VERY dramatic change - 15% HARDER
-        const greenZoneSize = 60 - (combinedProgress * 45); // Now 60% -> 15% (was 70% -> 15%)
+        // 1. Green zone gets smaller (60% -> 20%) - Keep minimum larger for better playability
+        const greenZoneSize = 60 - (combinedProgress * 40); // Now 60% -> 20% (was 60% -> 15%)
         
         // 2. Yellow line COMPLETELY random position every time
         const minPos = 15 + (combinedProgress * 10); // Move away from edges as difficulty increases
@@ -283,7 +283,7 @@ class GameManager {
         } else if (score === 10) {
             // PERFECT HIT (Yellow line): Big sparkles + fly to counter
             console.log('🌟 PERFECT HIT: Big sparkles + perfect pancake');
-            this.audioManager.playSuccessSound();
+            this.audioManager.playPerfectResultSound(); // Play perfect sound!
             this.audioManager.playFlipSound();
             this.flipPancake();
             
@@ -304,7 +304,7 @@ class GameManager {
                 });
             }, 600);
             
-        } else {
+        } else if (score === 7) {
             // GREEN ZONE HIT: Small sparkles + fly to counter
             console.log('✨ GREEN HIT: Small sparkles + perfect pancake');
             this.audioManager.playSuccessSound();

@@ -172,9 +172,9 @@ class QTERound {
                 this.markerPosition = Math.max(0, Math.min(96, this.markerPosition));
             }
             
-            // Use transform instead of left for better performance
-            const translateX = (this.markerPosition / 100) * (qteBarWidth - markerWidth);
-            this.marker.style.transform = `translateX(${translateX}px)`;
+            // Update marker position and color together
+            this.updateMarkerPosition();
+            this.updateMarkerColor();
             
             this.animationFrame = requestAnimationFrame(animate);
         };
@@ -195,60 +195,65 @@ class QTERound {
 
     calculateScore() {
         const position = this.markerPosition;
+        
+        // Get the actual positions from the DOM elements for perfect accuracy
+        const qteBar = this.container.querySelector('.qte-bar');
+        const yellowLine = this.container.querySelector('.yellow-line');
+        const greenZone = this.container.querySelector('.green-zone');
+        
+        if (!qteBar || !yellowLine || !greenZone) {
+            console.error('QTE elements not found!');
+            return 0;
+        }
+        
+        // Get actual pixel positions
+        const qteBarRect = qteBar.getBoundingClientRect();
+        const yellowLineRect = yellowLine.getBoundingClientRect();
+        const greenZoneRect = greenZone.getBoundingClientRect();
+        
+        // Calculate percentages based on actual DOM positions
+        const greenStartPercent = ((greenZoneRect.left - qteBarRect.left) / qteBarRect.width) * 100;
+        const greenEndPercent = ((greenZoneRect.right - qteBarRect.left) / qteBarRect.width) * 100;
+        
+        // Yellow line center position
+        const yellowCenterPercent = ((yellowLineRect.left + yellowLineRect.width / 2 - qteBarRect.left) / qteBarRect.width) * 100;
+        
+        // Perfect zone is EXACTLY the yellow line width (10px) - NO TOLERANCE!
+        const yellowLineWidthPercent = (yellowLineRect.width / qteBarRect.width) * 100;
+        const perfectStartPercent = yellowCenterPercent - yellowLineWidthPercent / 2;
+        const perfectEndPercent = yellowCenterPercent + yellowLineWidthPercent / 2;
+        
+        // Determine score
         let score;
         let zone;
         
-        // CORRECT ZONE CALCULATION - Bar layout: [Red][Green][Red]
-        const redZoneSize = (100 - this.difficulty.greenZoneSize) / 2;
-        const greenStart = redZoneSize;
-        const greenEnd = greenStart + this.difficulty.greenZoneSize;
-        
-        // FORCE yellow line to be INSIDE the green zone (this was the main bug!)
-        const yellowCenter = greenStart + (this.difficulty.yellowPosition / 100) * this.difficulty.greenZoneSize;
-        
-        // Perfect zone: ±3% around yellow line (absolute percentage)
-        const perfectZoneSize = 6; // 6% total (±3% each side)
-        const perfectStart = Math.max(greenStart, yellowCenter - perfectZoneSize / 2);
-        const perfectEnd = Math.min(greenEnd, yellowCenter + perfectZoneSize / 2);
-        
-        // Good zone: ±8% around yellow line (absolute percentage) 
-        const goodZoneSize = 16; // 16% total (±8% each side)
-        const goodStart = Math.max(greenStart, yellowCenter - goodZoneSize / 2);
-        const goodEnd = Math.min(greenEnd, yellowCenter + goodZoneSize / 2);
-        
-        // SIMPLE SCORING LOGIC - no overlapping zones
-        if (position >= perfectStart && position <= perfectEnd) {
+        if (position >= perfectStartPercent && position <= perfectEndPercent) {
             score = 10;
-            zone = 'Perfect (Yellow Line)';
-        }
-        else if (position >= goodStart && position <= goodEnd) {
+            zone = 'PERFECT!';
+        } else if (position >= greenStartPercent && position <= greenEndPercent) {
             score = 7;
-            zone = 'Good (Near Yellow)';
-        }
-        else if (position >= greenStart && position <= greenEnd) {
-            score = 5;
-            zone = 'Decent (Green Zone)';
-        }
-        else {
+            zone = 'GOOD';
+        } else {
             score = 0;
-            zone = 'Miss (Red Zone)';
+            zone = 'MISS';
         }
         
-        console.log(`🎯 QTE SCORING RESULT:`);
-        console.log(`   Marker Position: ${position.toFixed(1)}%`);
-        console.log(`   Green Zone: ${greenStart.toFixed(1)}% - ${greenEnd.toFixed(1)}%`);
-        console.log(`   Yellow Line: ${yellowCenter.toFixed(1)}%`);
-        console.log(`   Perfect Zone: ${perfectStart.toFixed(1)}% - ${perfectEnd.toFixed(1)}%`);
-        console.log(`   Good Zone: ${goodStart.toFixed(1)}% - ${goodEnd.toFixed(1)}%`);
-        console.log(`   RESULT: ${zone} -> Score ${score}`);
+        console.log(`🎯 PRECISE SCORING:`);
+        console.log(`   Marker Position: ${position.toFixed(2)}%`);
+        console.log(`   Yellow Line: ${perfectStartPercent.toFixed(2)}% - ${perfectEndPercent.toFixed(2)}% (width: ${yellowLineWidthPercent.toFixed(2)}%)`);
+        console.log(`   Result: ${zone} = ${score} points`);
+        
+        if (score === 10) {
+            console.log(`   ✨ PERFECT HIT! Marker is EXACTLY on the yellow line!`);
+        }
+        
         return score;
     }
 
     getScoreMessage(score) {
         switch(score) {
             case 10: return "Perfect!";
-            case 7: return "Nice!";
-            case 5: return "Good!";
+            case 7: return "Good!";
             case 0: return "Missed!";
             default: return "Too slow!";
         }
@@ -290,6 +295,61 @@ class QTERound {
                 this.onComplete(score, message);
             }
         }, 500);
+    }
+
+    updateMarkerPosition() {
+        const qteBar = this.container.querySelector('.qte-bar');
+        const markerWidth = this.marker.offsetWidth;
+        const qteBarWidth = qteBar ? qteBar.offsetWidth : 400;
+        
+        const translateX = (this.markerPosition / 100) * (qteBarWidth - markerWidth);
+        this.marker.style.transform = `translateX(${translateX}px)`;
+    }
+
+    updateMarkerColor() {
+        const position = this.markerPosition;
+        
+        // Get the actual positions from the DOM elements (same as calculateScore)
+        const qteBar = this.container.querySelector('.qte-bar');
+        const yellowLine = this.container.querySelector('.yellow-line');
+        const greenZone = this.container.querySelector('.green-zone');
+        
+        if (!qteBar || !yellowLine || !greenZone) return;
+        
+        // Get actual pixel positions
+        const qteBarRect = qteBar.getBoundingClientRect();
+        const yellowLineRect = yellowLine.getBoundingClientRect();
+        const greenZoneRect = greenZone.getBoundingClientRect();
+        
+        // Calculate percentages based on actual DOM positions
+        const greenStartPercent = ((greenZoneRect.left - qteBarRect.left) / qteBarRect.width) * 100;
+        const greenEndPercent = ((greenZoneRect.right - qteBarRect.left) / qteBarRect.width) * 100;
+        
+        // Yellow line center position
+        const yellowCenterPercent = ((yellowLineRect.left + yellowLineRect.width / 2 - qteBarRect.left) / qteBarRect.width) * 100;
+        
+        // Perfect zone EXACTLY matches yellow line - NO TOLERANCE!
+        const yellowLineWidthPercent = (yellowLineRect.width / qteBarRect.width) * 100;
+        const perfectStartPercent = yellowCenterPercent - yellowLineWidthPercent / 2;
+        const perfectEndPercent = yellowCenterPercent + yellowLineWidthPercent / 2;
+        
+        // Update marker color based on position
+        if (position >= perfectStartPercent && position <= perfectEndPercent) {
+            // PERFECT ZONE - Bright blue like the yellow line
+            this.marker.style.background = '#4DA8E5';
+            this.marker.style.boxShadow = '0 0 20px #4DA8E5, 0 0 40px #4DA8E5';
+            this.marker.style.width = '6px'; // Slightly wider when in perfect zone
+        } else if (position >= greenStartPercent && position <= greenEndPercent) {
+            // GOOD ZONE - Light blue
+            this.marker.style.background = '#7BB8D4';
+            this.marker.style.boxShadow = '0 0 10px #7BB8D4';
+            this.marker.style.width = '4px';
+        } else {
+            // MISS ZONE - Purple
+            this.marker.style.background = 'var(--pastel-purple)';
+            this.marker.style.boxShadow = '0 0 8px var(--pastel-purple)';
+            this.marker.style.width = '4px';
+        }
     }
 
     flashResult(score) {
